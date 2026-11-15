@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FAF9F6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Finanzas S/">
+<title>Finanzas Soles</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+        colors: {
+          cream: '#FAF9F6',
+          ink: '#1E293B',
+          coral: '#FB7185',
+          mint: { 400: '#34D399', 500: '#10B981' }
+        }
+      }
+    }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  html, body { -webkit-tap-highlight-color: transparent; }
+  body { background: #FAF9F6; color: #1E293B; padding-top: env(safe-area-inset-top); font-feature-settings: 'tnum'; }
+  .card { background: #fff; border: 1px solid rgba(226,232,240,.8); border-radius: 1.5rem; box-shadow: 0 1px 2px rgba(30,41,59,.04), 0 8px 24px -12px rgba(30,41,59,.08); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .sheet { transform: translateY(105%); transition: transform .3s cubic-bezier(.22,1,.36,1); visibility: hidden; }
+  .sheet.open { transform: translateY(0); visibility: visible; }
+  .overlay { opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .bar { transition: width .9s cubic-bezier(.22,1,.36,1); }
+  input, select { font-size: 16px; }
+  input:focus, select:focus { outline: 2px solid #34D399; outline-offset: 0; border-color: transparent; }
+  .view { animation: fadeUp .35s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .pop { animation: pop .45s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes pop { from { opacity: 0; transform: scale(.9) translateY(12px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body class="font-sans min-h-screen">
+
+<!-- Pochacco (símbolo reutilizable) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="pocha" viewBox="0 0 100 100">
+    <g stroke="#1E293B" stroke-width="2.5" stroke-linejoin="round">
+      <ellipse cx="17" cy="52" rx="10" ry="21" fill="#1E293B" transform="rotate(10 17 52)"/>
+      <ellipse cx="83" cy="52" rx="10" ry="21" fill="#1E293B" transform="rotate(-10 83 52)"/>
+      <ellipse cx="50" cy="54" rx="34" ry="30" fill="#FFFFFF"/>
+    </g>
+    <circle cx="30" cy="60" r="4" fill="#FB7185" opacity="0.5"/>
+    <circle cx="70" cy="60" r="4" fill="#FB7185" opacity="0.5"/>
+    <circle cx="38" cy="50" r="3.2" fill="#1E293B"/>
+    <circle cx="62" cy="50" r="3.2" fill="#1E293B"/>
+    <ellipse cx="50" cy="59" rx="5" ry="3.5" fill="#1E293B"/>
+    <path d="M50 62.5v3M50 65.5q-4 4-8 1M50 65.5q4 4 8 1" fill="none" stroke="#1E293B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</svg>
+
+<main class="max-w-md mx-auto pb-36 px-4 pt-5">
+
+  <!-- Cabecera -->
+  <header class="flex items-center gap-3 mb-5">
+    <button id="mascota" type="button" aria-label="Pochacco"
+      class="w-14 h-14 shrink-0 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-center active:scale-90 transition select-none"
+      style="touch-action:manipulation">
+      <svg class="w-10 h-10" viewBox="0 0 100 100" aria-hidden="true"><use href="#pocha"/></svg>
+    </button>
+    <div class="min-w-0">
+      <h1 class="text-[22px] font-extrabold leading-tight tracking-tight">Hola, Arian<sup>2</sup>a</h1>
+      <p id="mesActual" class="text-sm text-slate-500 capitalize"></p>
+    </div>
+  </header>
+
+  <!-- ============ RESUMEN ============ -->
+  <section id="view-resumen" class="view">
+    <div class="rounded-[1.75rem] bg-ink text-white p-6 shadow-[0_18px_40px_-18px_rgba(30,41,59,.55)] relative overflow-hidden">
+      <div class="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-mint-400/20"></div>
+      <div class="absolute right-10 -bottom-10 w-24 h-24 rounded-full bg-mint-400/10"></div>
+      <p class="text-sm text-white/60 font-medium">Saldo Total Disponible</p>
+      <p id="saldo" class="text-[40px] leading-none font-extrabold mt-2 tracking-tight">S/ 0.00</p>
+      <p class="text-xs text-white/45 mt-3">Suma de todas tus cuentas</p>
+    </div>
+
+    <!-- Carrusel de cuentas -->
+    <div class="-mx-4 mt-3">
+      <div id="cuentas" class="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scroll-smooth" style="-webkit-overflow-scrolling:touch"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-3">
+      <div class="card p-4">
+        <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+          <span class="w-6 h-6 rounded-full bg-emerald-50 text-mint-500 flex items-center justify-center">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </span>Ingresos del Mes
+        </div>
+        <p id="ingresosMes" class="text-lg font-extrabold text-mint-500 mt-2">S/ 0.00</p>
+      </div>
+      <div class="card p-4">
+        <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+          <span class="w-6 h-6 rounded-full bg-rose-50 text-coral flex items-center justify-center">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+          </span>Gastos del Mes
+        </div>
+        <p id="gastosMes" class="text-lg font-extrabold text-coral mt-2">S/ 0.00</p>
+      </div>
+    </div>
+
+    <!-- Presupuesto -->
+    <div class="card p-4 mt-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold">Presupuesto del mes</h2>
+        <button id="btnPresupuesto" class="text-xs font-semibold text-mint-500 px-2 py-1 -mr-2">Editar</button>
+      </div>
+      <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden mt-3">
+        <div id="presBar" class="bar h-full rounded-full bg-mint-400" style="width:0"></div>
+      </div>
+      <p id="presTexto" class="text-xs text-slate-500 mt-2"></p>
+    </div>
+
+    <div class="card p-5 mt-3">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold">Gastos por categoría</h2>
+        <div id="selPeriodo" class="flex bg-slate-100 rounded-full p-0.5 text-[11px] font-bold">
+          <button data-p="dia" class="rounded-full px-2.5 py-1">Hoy</button>
+          <button data-p="semana" class="rounded-full px-2.5 py-1">Semana</button>
+          <button data-p="mes" class="rounded-full px-2.5 py-1">Mes</button>
+          <button data-p="anio" class="rounded-full px-2.5 py-1">Año</button>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500">Total gastado <span id="periodoNombre">este mes</span></p>
+      <p id="periodoTotal" class="text-2xl font-extrabold text-coral mb-3">S/ 0.00</p>
+      <div id="donaWrap" class="relative h-52"><canvas id="dona"></canvas></div>
+      <p id="donaVacio" class="hidden text-center text-sm text-slate-400 py-10">Aún no hay gastos en este periodo.</p>
+      <ul id="donaLeyenda" class="mt-4 space-y-2 text-sm"></ul>
+    </div>
+  </section>
+
+  <!-- ============ HISTORIAL ============ -->
+  <section id="view-historial" class="view hidden">
+    <h2 class="text-lg font-extrabold mb-3">Historial</h2>
+    <div class="flex gap-2 mb-3">
+      <input id="filtroMes" type="month" class="flex-1 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-2.5">
+      <button id="btnTodosMeses" class="rounded-2xl bg-white border border-slate-200 px-4 text-sm font-semibold">Todos</button>
+    </div>
+    <div id="filtroTipo" class="grid grid-cols-3 gap-1 bg-slate-200/60 rounded-2xl p-1 mb-4 text-sm font-semibold">
+      <button data-tipo="all" class="rounded-xl py-2">Todos</button>
+      <button data-tipo="income" class="rounded-xl py-2">Ingresos</button>
+      <button data-tipo="expense" class="rounded-xl py-2">Gastos</button>
+    </div>
+    <ul id="lista" class="space-y-2"></ul>
+    <p id="listaVacia" class="hidden text-center text-slate-400 py-14 text-sm">No hay movimientos para este filtro.</p>
+  </section>
+
+  <!-- ============ METAS ============ -->
+  <section id="view-metas" class="view hidden">
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="text-lg font-extrabold">Metas</h2>
+      <button id="btnNuevaMeta" class="rounded-full bg-ink text-white text-sm font-semibold px-4 py-2 active:scale-95 transition">+ Nueva meta</button>
+    </div>
+    <p class="text-xs text-slate-500 mb-4">Tus alcancías de ahorro. El dinero de las metas es aparte y no cambia tu saldo.</p>
+    <ul id="metasLista" class="space-y-3"></ul>
+    <div id="metasVacio" class="hidden card p-8 text-center">
+      <svg class="w-16 h-16 mx-auto" viewBox="0 0 100 100"><use href="#pocha"/></svg>
+      <p class="font-bold mt-3">Aún no tienes metas</p>
+      <p class="text-sm text-slate-500 mt-1">Crea una alcancía para tu próximo viaje, compra o ahorro.</p>
+    </div>
+  </section>
+
+  <!-- ============ RESPALDO ============ -->
+  <section id="view-respaldo" class="view hidden">
+    <h2 class="text-lg font-extrabold mb-3">Respaldo</h2>
+    <div class="card p-5 space-y-3">
+      <p class="text-sm text-slate-500">Tus datos viven solo en este teléfono. Exporta una copia de vez en cuando para no perderlos.</p>
+      <p class="text-sm"><span id="totalMov" class="font-extrabold">0</span> movimientos · <span id="totalMetas" class="font-extrabold">0</span> metas</p>
+      <button id="btnCsv" class="w-full rounded-2xl bg-mint-500 text-white font-bold py-3.5 active:scale-95 transition">Exportar CSV (movimientos)</button>
+      <button id="btnJson" class="w-full rounded-2xl bg-ink text-white font-bold py-3.5 active:scale-95 transition">Exportar JSON (todo)</button>
+    </div>
+  </section>
+</main>
+
+<!-- FAB -->
+<button id="fab" aria-label="Registrar movimiento"
+  class="fixed right-5 z-30 w-14 h-14 rounded-full bg-mint-500 text-white shadow-[0_12px_28px_-8px_rgba(16,185,129,.7)] active:scale-90 transition flex items-center justify-center"
+  style="bottom: calc(5.75rem + env(safe-area-inset-bottom))">
+  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- Navegación inferior -->
+<nav class="fixed bottom-0 inset-x-0 z-20 bg-cream/90 backdrop-blur border-t border-slate-200/70 safe-bottom">
+  <div class="max-w-md mx-auto grid grid-cols-4 text-[11px] font-semibold px-2">
+    <button data-nav="resumen" class="py-2.5 flex flex-col items-center gap-1">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Resumen</button>
+    <button data-nav="historial" class="py-2.5 flex flex-col items-center gap-1">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Historial</button>
+    <button data-nav="metas" class="py-2.5 flex flex-col items-center gap-1">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Metas</button>
+    <button data-nav="respaldo" class="py-2.5 flex flex-col items-center gap-1">
+      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>Respaldo</button>
+  </div>
+</nav>
+
+<!-- Overlay compartido -->
+<div id="overlay" class="overlay fixed inset-0 z-40 bg-ink/40"></div>
+
+<!-- Sheet: movimiento -->
+<div id="sheet-mov" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+  <form id="form" class="max-w-md mx-auto p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 id="sheetTitulo" class="text-lg font-extrabold">Nuevo movimiento</h2>
+      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+    </div>
+    <div id="selTipo" class="grid grid-cols-2 gap-1 bg-slate-100 rounded-2xl p-1 text-sm font-bold">
+      <button type="button" data-tipo="expense" class="rounded-xl py-2.5">Gasto</button>
+      <button type="button" data-tipo="income" class="rounded-xl py-2.5">Ingreso</button>
+    </div>
+    <label class="block">
+      <span class="text-xs text-slate-500 font-medium">Monto (S/)</span>
+      <input id="fMonto" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00"
+        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
+    </label>
+    <label class="block">
+      <span class="text-xs text-slate-500 font-medium">Descripción</span>
+      <input id="fDesc" type="text" maxlength="80" required placeholder="Ej. Almuerzo"
+        class="w-full rounded-2xl border border-slate-200 px-4 py-3">
+    </label>
+    <label class="block">
+      <span class="text-xs text-slate-500 font-medium">Cuenta</span>
+      <select id="fCuenta" class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3"></select>
+    </label>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="block">
+        <span class="text-xs text-slate-500 font-medium">Categoría</span>
+        <select id="fCat" class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3"></select>
+      </label>
+      <label class="block">
+        <span class="text-xs text-slate-500 font-medium">Fecha</span>
+        <input id="fFecha" type="date" required class="w-full rounded-2xl border border-slate-200 px-3 py-3">
+      </label>
+    </div>
+    <button type="submit" id="btnGuardar" class="w-full rounded-2xl text-white font-bold py-3.5 active:scale-95 transition">Guardar</button>
+  </form>
+</div>
+
+<!-- Sheet: cuenta -->
+<div id="sheet-cuenta" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+  <form id="formCuenta" class="max-w-md mx-auto p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 id="cuentaTitulo" class="text-lg font-extrabold">Nueva cuenta</h2>
+      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+    </div>
+    <div class="flex gap-2 flex-wrap" id="chipsCuenta">
+      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Yape</button>
+      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Efectivo</button>
+      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Tarjeta BCP</button>
+      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Interbank</button>
+    </div>
+    <label class="block">
+      <span class="text-xs text-slate-500 font-medium">Nombre</span>
+      <input id="cNombre" type="text" maxlength="24" required placeholder="Ej. Yape" class="w-full rounded-2xl border border-slate-200 px-4 py-3">
+    </label>
+    <div>
+      <span class="text-xs text-slate-500 font-medium">Color</span>
+      <div id="cColores" class="flex gap-3 mt-2"></div>
+    </div>
+    <label class="block">
+      <span class="text-xs text-slate-500 font-medium">Saldo inicial (S/)</span>
+      <input id="cInicial" type="number" inputmode="decimal" step="0.01" placeholder="0.00"
+        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
+    </label>
+    <p id="cuentaError" class="hidden text-sm text-coral font-medium"></p>
+    <button type="submit" class="w-full rounded-2xl bg-mint-500 text-white font-bold py-3.5 active:scale-95 transition">Guardar cuenta</button>
+    <button type="button" id="btnBorrarCuenta" class="hidden w-full rounded-2xl bg-rose-50 text-coral font-bold py-3 active:scale-95 transition">Eliminar cuenta</button>
+  </form>
+</div>
+
+<!-- Sheet: presupuesto -->
+<div id="sheet-pres" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+  <form id="formPres" class="max-w-md mx-auto p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-extrabold">Presupuesto mensual</h2>
+      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+    </div>
+    <p class="text-sm text-slate-500">¿Cuánto quieres gastar como máximo cada mes? Déjalo vacío para quitarlo.</p>
+    <input id="fPres" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Ej. 1500"
+      class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
+    <button type="submit" class="w-full rounded-2xl bg-ink text-white font-bold py-3.5 active:scale-95 transition">Guardar presupuesto</button>
+  </form>
+</div>
+
+<!-- Sheet: nueva meta -->
+<div id="sheet-meta" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+  <form id="formMeta" class="max-w-md mx-auto p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-extrabold">Nueva meta</h2>
+      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+    </div>
+    <div class="flex gap-2 flex-wrap" id="chipsMeta">
+      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Viaje</button>
+      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Compras</button>
+      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Ahorros</button>
+    </div>
+    <label class="block">
+      <span class="text-xs text-slate-500 font-medium">Nombre</span>
+      <input id="mNombre" type="text" maxlength="30" required placeholder="Ej. Viaje a Cusco" class="w-full rounded-2xl border border-slate-200 px-4 py-3">
+    </label>
+    <label class="block">
+      <span class="text-xs text-slate-500 font-medium">Monto objetivo (S/)</span>
+      <input id="mObjetivo" type="number" inputmode="decimal" step="0.01" min="1" required placeholder="0.00"
+        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
+    </label>
+    <button type="submit" class="w-full rounded-2xl bg-mint-500 text-white font-bold py-3.5 active:scale-95 transition">Crear meta</button>
+  </form>
+</div>
+
+<!-- Sheet: abonar / retirar -->
+<div id="sheet-monto" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+  <form id="formMonto" class="max-w-md mx-auto p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 id="montoTitulo" class="text-lg font-extrabold">Abonar</h2>
+      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+    </div>
+    <p id="montoAyuda" class="text-sm text-slate-500"></p>
+    <input id="aMonto" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00"
+      class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
+    <p id="montoError" class="hidden text-sm text-coral font-medium"></p>
+    <button type="submit" id="btnMonto" class="w-full rounded-2xl text-white font-bold py-3.5 active:scale-95 transition">Confirmar</button>
+  </form>
+</div>
+
+<!-- Easter egg: cumpleaños -->
+<canvas id="confeti" class="fixed inset-0 z-[70] pointer-events-none hidden"></canvas>
+<div id="bday" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6 bg-ink/50" role="dialog" aria-modal="true">
+  <div class="pop card w-full max-w-sm overflow-hidden text-center">
+    <div class="bg-mint-400/25 pt-8 pb-5">
+      <div class="w-24 h-24 mx-auto rounded-3xl bg-white shadow-sm flex items-center justify-center">
+        <svg class="w-20 h-20" viewBox="0 0 100 100"><use href="#pocha"/></svg>
+      </div>
+    </div>
+    <div class="px-6 pt-5 pb-6">
+      <h2 id="bdayTitulo" class="text-2xl font-extrabold tracking-tight"></h2>
+      <p id="bdayMensaje" class="text-slate-600 mt-3 leading-relaxed whitespace-pre-line"></p>
+      <p id="bdayFirma" class="font-bold text-mint-500 mt-4"></p>
+      <button id="bdayCerrar" class="mt-6 w-full rounded-2xl bg-ink text-white font-bold py-3.5 active:scale-95 transition">Gracias</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  MENSAJE DE CUMPLEAÑOS (Easter Egg)
+//  Se muestra al tocar 3 veces seguidas el perrito de la cabecera.
+//  Para cambiar el texto, edita SOLO los textos entre comillas.
+//  En "mensaje" puedes usar \n para saltos de línea.
+// ============================================================
+const MENSAJE_CUMPLEANOS = {
+  titulo: "¡Feliz cumpleaños, Arian²a!",
+  mensaje: "Que este nuevo año venga lleno de metas cumplidas, buenos momentos y muchas sonrisas.\nGracias por ser tan especial.",
+  firma: "Con cariño, tu amigo"
+};
+
+(() => {
+  'use strict';
+
+  // ---------- Constantes y utilidades ----------
+  const KEY = 'finanzas_movimientos';
+  const KEY_METAS = 'finanzas_metas';
+  const KEY_PRES = 'finanzas_presupuesto';
+  const KEY_CUENTAS = 'finanzas_cuentas';
+  const COLORES_CUENTA = ['#34D399', '#FB7185', '#60A5FA', '#FBBF24', '#A78BFA', '#1E293B'];
+  const CATS = {
+    expense: ['Alimentación', 'Transporte', 'Vivienda', 'Servicios', 'Salud', 'Educación', 'Entretenimiento', 'Compras', 'Otros'],
+    income: ['Sueldo', 'Negocio', 'Regalo', 'Inversión', 'Otros']
+  };
+  const COLORS = ['#FB7185', '#34D399', '#1E293B', '#FBBF24', '#60A5FA', '#A78BFA', '#F472B6', '#2DD4BF', '#94A3B8'];
+  const fmt = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
+  const money = (n) => fmt.format(n).replace(/\s/g, ' ').replace('PEN', 'S/');
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const pad = (n) => String(n).padStart(2, '0');
+  const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const monthISO = () => todayISO().slice(0, 7);
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const fechaLarga = (iso) => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${MESES[m - 1].slice(0, 3)} ${y}`; };
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const round2 = (n) => Math.round(n * 100) / 100;
+
+  function loadJSON(key, def) {
+    try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; }
+    catch { return def; }
+  }
+  function saveJSON(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); }
+    catch { alert('No se pudo guardar en este navegador (almacenamiento bloqueado o lleno).'); }
+  }
+
+  let movs = loadJSON(KEY, []);
+  if (!Array.isArray(movs)) movs = [];
+  let metas = loadJSON(KEY_METAS, []);
+  if (!Array.isArray(metas)) metas = [];
+  let presupuesto = Number(loadJSON(KEY_PRES, 0)) || 0;
+
+  // Cuentas / billeteras: [{id, name, color, initial}]. Siempre hay al menos una.
+  let cuentas = loadJSON(KEY_CUENTAS, []);
+  if (!Array.isArray(cuentas)) cuentas = [];
+  cuentas = cuentas.filter((c) => c && c.id && c.name);
+  if (cuentas.length === 0) {
+    cuentas = [{ id: 'efectivo', name: 'Efectivo', color: COLORES_CUENTA[0], initial: 0 }];
+    saveJSON(KEY_CUENTAS, cuentas);
+  }
+  // Migración: movimientos antiguos (o con cuenta inexistente) pasan a la primera cuenta
+  const migrados = movs.filter((m) => !cuentas.some((c) => c.id === m.account));
+  if (migrados.length) { migrados.forEach((m) => { m.account = cuentas[0].id; }); saveJSON(KEY, movs); }
+
+  let periodo = 'mes';      // dia | semana | mes | anio (filtro de la dona)
+  let cuentaActiva = null;  // id de la cuenta en edición (null = nueva)
+  let cuentaColor = COLORES_CUENTA[0];
+  let ultimaCuenta = cuentas[0].id;
+
+  let filtroTipo = 'all';
+  let filtroMes = monthISO();
+  let editId = null;
+  let formTipo = 'expense';
+  let chart = null;
+  let metaActiva = null;   // id de la meta en el modal abonar/retirar
+  let modoMonto = 'abonar';
+  const lastPct = {};      // para animar las barras desde su valor anterior
+
+  const sum = (arr) => arr.reduce((a, m) => a + m.amount, 0);
+
+  // ---------- Sheets ----------
+  const SHEETS = ['sheet-mov', 'sheet-pres', 'sheet-meta', 'sheet-monto', 'sheet-cuenta'];
+  function openSheet(id) {
+    $('overlay').classList.add('open');
+    $(id).classList.add('open');
+    $(id).setAttribute('aria-hidden', 'false');
+  }
+  function closeSheets() {
+    $('overlay').classList.remove('open');
+    SHEETS.forEach((id) => { $(id).classList.remove('open'); $(id).setAttribute('aria-hidden', 'true'); });
+    editId = null; metaActiva = null; cuentaActiva = null;
+  }
+  $('overlay').addEventListener('click', closeSheets);
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeSheets));
+
+  // ---------- Navegación ----------
+  const VIEWS = ['resumen', 'historial', 'metas', 'respaldo'];
+  function nav(view) {
+    VIEWS.forEach((v) => $('view-' + v).classList.toggle('hidden', v !== view));
+    document.querySelectorAll('[data-nav]').forEach((b) => {
+      const on = b.dataset.nav === view;
+      b.classList.toggle('text-ink', on);
+      b.classList.toggle('text-slate-400', !on);
+      b.querySelector('svg').style.color = on ? '#10B981' : '';
+    });
+    $('fab').classList.toggle('hidden', view === 'respaldo' || view === 'metas');
+    window.scrollTo(0, 0);
+    if (view === 'resumen') renderResumen();
+    if (view === 'metas') renderMetas();
+  }
+  document.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => nav(b.dataset.nav)));
+
+  // ---------- Cuentas ----------
+  const saldoCuenta = (c) => round2(Number(c.initial || 0) + movs.reduce((a, m) =>
+    m.account !== c.id ? a : a + (m.type === 'income' ? m.amount : -m.amount), 0));
+  const nombreCuenta = (id) => (cuentas.find((c) => c.id === id) || { name: 'Sin cuenta' }).name;
+
+  function renderCuentas() {
+    $('cuentas').innerHTML = cuentas.map((c) => {
+      const s = saldoCuenta(c);
+      return `<button data-cuenta="${esc(c.id)}" class="snap-start shrink-0 w-36 card !rounded-2xl p-3.5 text-left active:scale-95 transition">
+        <span class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${esc(c.color)}"></span><span class="truncate">${esc(c.name)}</span>
+        </span>
+        <span class="block text-base font-extrabold mt-1.5 ${s < 0 ? 'text-coral' : ''}">${money(s)}</span>
+      </button>`;
+    }).join('') + `<button id="btnNuevaCuenta" class="snap-start shrink-0 w-28 rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+        <span class="text-xl leading-none">+</span>Cuenta</button>`;
+  }
+
+  function pintarColores() {
+    $('cColores').innerHTML = COLORES_CUENTA.map((col) =>
+      `<button type="button" data-col="${col}" aria-label="Color" class="w-8 h-8 rounded-full ${col === cuentaColor ? 'ring-2 ring-offset-2 ring-ink' : ''}" style="background:${col}"></button>`
+    ).join('');
+  }
+  $('cColores').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-col]');
+    if (b) { cuentaColor = b.dataset.col; pintarColores(); }
+  });
+  $('chipsCuenta').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) { $('cNombre').value = b.textContent; $('cInicial').focus(); }
+  });
+
+  function abrirCuenta(id) {
+    const c = id ? cuentas.find((x) => x.id === id) : null;
+    cuentaActiva = c ? c.id : null;
+    cuentaColor = c ? c.color : COLORES_CUENTA[cuentas.length % COLORES_CUENTA.length];
+    $('cuentaTitulo').textContent = c ? 'Editar cuenta' : 'Nueva cuenta';
+    $('cNombre').value = c ? c.name : '';
+    $('cInicial').value = c ? c.initial : '';
+    $('chipsCuenta').classList.toggle('hidden', !!c);
+    $('btnBorrarCuenta').classList.toggle('hidden', !c);
+    $('cuentaError').classList.add('hidden');
+    pintarColores();
+    openSheet('sheet-cuenta');
+  }
+  $('cuentas').addEventListener('click', (e) => {
+    if (e.target.closest('#btnNuevaCuenta')) return abrirCuenta(null);
+    const b = e.target.closest('[data-cuenta]');
+    if (b) abrirCuenta(b.dataset.cuenta);
+  });
+  $('formCuenta').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('cNombre').value.trim();
+    const initial = round2(parseFloat($('cInicial').value) || 0);
+    if (!name) return;
+    if (cuentas.some((c) => c.id !== cuentaActiva && c.name.toLowerCase() === name.toLowerCase())) {
+      $('cuentaError').textContent = 'Ya tienes una cuenta con ese nombre.';
+      $('cuentaError').classList.remove('hidden');
+      return;
+    }
+    if (cuentaActiva) {
+      cuentas = cuentas.map((c) => (c.id === cuentaActiva ? { ...c, name, initial, color: cuentaColor } : c));
+    } else {
+      cuentas.push({ id: newId(), name, color: cuentaColor, initial });
+    }
+    saveJSON(KEY_CUENTAS, cuentas);
+    closeSheets();
+    renderAll();
+  });
+  $('btnBorrarCuenta').addEventListener('click', () => {
+    const c = cuentas.find((x) => x.id === cuentaActiva);
+    if (!c) return;
+    const msg = (t) => { $('cuentaError').textContent = t; $('cuentaError').classList.remove('hidden'); };
+    if (cuentas.length === 1) return msg('Debes tener al menos una cuenta.');
+    if (movs.some((m) => m.account === c.id)) return msg('Esta cuenta tiene movimientos. Edítalos o elimínalos primero.');
+    if (!confirm(`¿Eliminar la cuenta "${c.name}"?`)) return;
+    cuentas = cuentas.filter((x) => x.id !== c.id);
+    saveJSON(KEY_CUENTAS, cuentas);
+    closeSheets();
+    renderAll();
+  });
+
+  // ---------- Periodo de la dona ----------
+  function rangoPeriodo(p) {
+    const d = new Date(), y = d.getFullYear(), mo = d.getMonth(), da = d.getDate();
+    const iso = (dt) => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+    if (p === 'dia') { const t = iso(d); return [t, t]; }
+    if (p === 'semana') {
+      const dow = (d.getDay() + 6) % 7; // lunes = 0
+      return [iso(new Date(y, mo, da - dow)), iso(new Date(y, mo, da - dow + 6))];
+    }
+    if (p === 'anio') return [`${y}-01-01`, `${y}-12-31`];
+    return [`${y}-${pad(mo + 1)}-01`, `${y}-${pad(mo + 1)}-31`];
+  }
+  $('selPeriodo').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-p]');
+    if (b) { periodo = b.dataset.p; renderResumen(); }
+  });
+
+  // ---------- Resumen ----------
+  function renderResumen() {
+    const mes = monthISO();
+    const delMes = movs.filter((m) => m.date.startsWith(mes));
+    const ing = sum(delMes.filter((m) => m.type === 'income'));
+    const gas = sum(delMes.filter((m) => m.type === 'expense'));
+    const saldo = cuentas.reduce((a, c) => a + saldoCuenta(c), 0);
+
+    $('saldo').textContent = money(saldo);
+    renderCuentas();
+    $('ingresosMes').textContent = money(ing);
+    $('gastosMes').textContent = money(gas);
+    const [y, m] = mes.split('-').map(Number);
+    $('mesActual').textContent = `${MESES[m - 1]} ${y}`;
+
+    // Presupuesto
+    const bar = $('presBar');
+    if (presupuesto > 0) {
+      const pct = gas / presupuesto * 100;
+      const restante = presupuesto - gas;
+      bar.style.background = pct >= 85 ? '#FB7185' : '#34D399';
+      requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = Math.min(100, pct) + '%'; }));
+      $('presTexto').textContent = restante >= 0
+        ? `Llevas ${money(gas)} de ${money(presupuesto)} · te quedan ${money(restante)}`
+        : `Te pasaste por ${money(-restante)} (presupuesto ${money(presupuesto)})`;
+    } else {
+      bar.style.width = '0';
+      $('presTexto').textContent = 'Aún no defines un presupuesto. Toca "Editar" para crear uno.';
+    }
+
+    // Gastos por categoría
+    const [desde, hasta] = rangoPeriodo(periodo);
+    const gastosPeriodo = movs.filter((x) => x.type === 'expense' && x.date >= desde && x.date <= hasta);
+    $('periodoNombre').textContent = { dia: 'hoy', semana: 'esta semana', mes: 'este mes', anio: 'este año' }[periodo];
+    $('periodoTotal').textContent = money(sum(gastosPeriodo));
+    document.querySelectorAll('#selPeriodo button').forEach((b) => {
+      const on = b.dataset.p === periodo;
+      b.classList.toggle('bg-white', on);
+      b.classList.toggle('shadow-sm', on);
+      b.classList.toggle('text-ink', on);
+      b.classList.toggle('text-slate-500', !on);
+    });
+    const porCat = {};
+    gastosPeriodo.forEach((x) => { porCat[x.category] = (porCat[x.category] || 0) + x.amount; });
+    const entries = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
+    const hayDatos = entries.length > 0;
+    $('donaWrap').classList.toggle('hidden', !hayDatos);
+    $('donaVacio').classList.toggle('hidden', hayDatos);
+
+    $('donaLeyenda').innerHTML = entries.map(([c, v], i) =>
+      `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${COLORS[i % COLORS.length]}"></span>${esc(c)}</span><span class="font-bold">${money(v)}</span></li>`
+    ).join('');
+
+    if (chart) { chart.destroy(); chart = null; }
+    if (hayDatos && window.Chart) {
+      chart = new Chart($('dona'), {
+        type: 'doughnut',
+        data: {
+          labels: entries.map((e) => e[0]),
+          datasets: [{ data: entries.map((e) => e[1]), backgroundColor: entries.map((_, i) => COLORS[i % COLORS.length]), borderWidth: 3, borderColor: '#fff', borderRadius: 6, hoverOffset: 4 }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${money(ctx.parsed)}` } }
+          }
+        }
+      });
+    }
+  }
+
+  // ---------- Presupuesto ----------
+  $('btnPresupuesto').addEventListener('click', () => {
+    $('fPres').value = presupuesto > 0 ? presupuesto : '';
+    openSheet('sheet-pres');
+    setTimeout(() => $('fPres').focus(), 300);
+  });
+  $('formPres').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = parseFloat($('fPres').value);
+    presupuesto = v > 0 ? round2(v) : 0;
+    saveJSON(KEY_PRES, presupuesto);
+    closeSheets();
+    renderResumen();
+  });
+
+  // ---------- Historial ----------
+  function renderHistorial() {
+    $('filtroMes').value = filtroMes;
+    document.querySelectorAll('#filtroTipo button').forEach((b) => {
+      const on = b.dataset.tipo === filtroTipo;
+      b.classList.toggle('bg-white', on);
+      b.classList.toggle('shadow-sm', on);
+      b.classList.toggle('text-ink', on);
+      b.classList.toggle('text-slate-500', !on);
+    });
+    const lista = movs
+      .filter((m) => (!filtroMes || m.date.startsWith(filtroMes)) && (filtroTipo === 'all' || m.type === filtroTipo))
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+
+    $('listaVacia').classList.toggle('hidden', lista.length > 0);
+    $('lista').innerHTML = lista.map((m) => {
+      const inc = m.type === 'income';
+      return `<li class="card !rounded-2xl p-3 flex items-center gap-3">
+        <span class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${inc ? 'bg-emerald-50 text-mint-500' : 'bg-rose-50 text-coral'}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${inc ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M19 12l-7 7-7-7"/>'}</svg>
+        </span>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold truncate">${esc(m.description)}</p>
+          <p class="text-xs text-slate-500 truncate">${esc(m.category)} · ${esc(nombreCuenta(m.account))} · ${fechaLarga(m.date)}</p>
+        </div>
+        <div class="text-right">
+          <p class="font-extrabold ${inc ? 'text-mint-500' : 'text-coral'}">${inc ? '+' : '−'}${money(m.amount)}</p>
+          <div class="flex gap-3 justify-end text-xs mt-1 font-medium">
+            <button data-edit="${esc(m.id)}" class="text-slate-500 underline">Editar</button>
+            <button data-del="${esc(m.id)}" class="text-coral underline">Eliminar</button>
+          </div>
+        </div>
+      </li>`;
+    }).join('');
+  }
+
+  $('filtroMes').addEventListener('change', (e) => { filtroMes = e.target.value; renderHistorial(); });
+  $('btnTodosMeses').addEventListener('click', () => { filtroMes = ''; renderHistorial(); });
+  $('filtroTipo').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-tipo]');
+    if (b) { filtroTipo = b.dataset.tipo; renderHistorial(); }
+  });
+  $('lista').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-edit]');
+    const del = e.target.closest('[data-del]');
+    if (ed) abrirForm(ed.dataset.edit);
+    if (del && confirm('¿Eliminar este movimiento?')) {
+      movs = movs.filter((m) => m.id !== del.dataset.del);
+      saveJSON(KEY, movs); renderAll();
+    }
+  });
+
+  // ---------- Formulario de movimiento ----------
+  function setTipo(t) {
+    formTipo = t;
+    document.querySelectorAll('#selTipo button').forEach((b) => {
+      const on = b.dataset.tipo === t;
+      b.classList.toggle('bg-white', on);
+      b.classList.toggle('shadow-sm', on);
+      b.classList.toggle('text-coral', on && t === 'expense');
+      b.classList.toggle('text-mint-500', on && t === 'income');
+      b.classList.toggle('text-slate-500', !on);
+    });
+    const btn = $('btnGuardar');
+    btn.classList.toggle('bg-coral', t === 'expense');
+    btn.classList.toggle('bg-mint-500', t === 'income');
+    const actual = $('fCat').value;
+    $('fCat').innerHTML = CATS[t].map((c) => `<option>${esc(c)}</option>`).join('');
+    if (CATS[t].includes(actual)) $('fCat').value = actual;
+  }
+  $('selTipo').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-tipo]');
+    if (b) setTipo(b.dataset.tipo);
+  });
+
+  function abrirForm(id) {
+    editId = id || null;
+    const m = id ? movs.find((x) => x.id === id) : null;
+    $('sheetTitulo').textContent = m ? 'Editar movimiento' : 'Nuevo movimiento';
+    $('fCat').innerHTML = '';
+    setTipo(m ? m.type : 'expense');
+    $('fMonto').value = m ? m.amount : '';
+    $('fDesc').value = m ? m.description : '';
+    $('fCat').value = m ? m.category : CATS[formTipo][0];
+    $('fFecha').value = m ? m.date : todayISO();
+    $('fCuenta').innerHTML = cuentas.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+    $('fCuenta').value = m ? m.account : (cuentas.some((c) => c.id === ultimaCuenta) ? ultimaCuenta : cuentas[0].id);
+    openSheet('sheet-mov');
+    setTimeout(() => $('fMonto').focus(), 300);
+  }
+  $('fab').addEventListener('click', () => abrirForm());
+
+  $('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const amount = round2(parseFloat($('fMonto').value));
+    const description = $('fDesc').value.trim();
+    if (!(amount > 0) || !description || !$('fFecha').value) return;
+    const data = { type: formTipo, amount, description, category: $('fCat').value, date: $('fFecha').value, account: $('fCuenta').value };
+    ultimaCuenta = data.account;
+    if (editId) {
+      movs = movs.map((m) => (m.id === editId ? { ...m, ...data } : m));
+    } else {
+      movs.push({ id: newId(), ...data });
+    }
+    saveJSON(KEY, movs);
+    closeSheets();
+    renderAll();
+  });
+
+  // ---------- Metas (alcancías) ----------
+  function renderMetas() {
+    $('metasVacio').classList.toggle('hidden', metas.length > 0);
+    $('metasLista').innerHTML = metas.map((g) => {
+      const pct = g.target > 0 ? Math.min(100, g.saved / g.target * 100) : 0;
+      const done = g.saved >= g.target;
+      const prev = lastPct[g.id] || 0;
+      return `<li class="card p-4">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="font-extrabold truncate">${esc(g.name)}</p>
+            <p class="text-xs text-slate-500 mt-0.5">${done ? '¡Meta lograda!' : 'Faltan ' + money(g.target - g.saved)}</p>
+          </div>
+          <button data-meta-del="${esc(g.id)}" class="text-slate-300 text-2xl leading-none px-1" aria-label="Eliminar meta">×</button>
+        </div>
+        <div class="flex items-end justify-between mt-3">
+          <p class="text-xl font-extrabold ${done ? 'text-mint-500' : ''}">${money(g.saved)}</p>
+          <p class="text-xs text-slate-500">de ${money(g.target)} · ${Math.round(pct)}%</p>
+        </div>
+        <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden mt-2">
+          <div class="bar h-full rounded-full bg-mint-400" data-w="${pct}" data-id="${esc(g.id)}" style="width:${prev}%"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-4">
+          <button data-meta-add="${esc(g.id)}" class="rounded-xl bg-mint-500 text-white text-sm font-bold py-2.5 active:scale-95 transition">Abonar</button>
+          <button data-meta-sub="${esc(g.id)}" class="rounded-xl bg-slate-100 text-ink text-sm font-bold py-2.5 active:scale-95 transition">Retirar</button>
+        </div>
+      </li>`;
+    }).join('');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.querySelectorAll('#metasLista .bar').forEach((b) => {
+        b.style.width = b.dataset.w + '%';
+        lastPct[b.dataset.id] = parseFloat(b.dataset.w);
+      });
+    }));
+  }
+
+  $('btnNuevaMeta').addEventListener('click', () => {
+    $('mNombre').value = ''; $('mObjetivo').value = '';
+    openSheet('sheet-meta');
+    setTimeout(() => $('mNombre').focus(), 300);
+  });
+  $('chipsMeta').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) { $('mNombre').value = b.textContent; $('mObjetivo').focus(); }
+  });
+  $('formMeta').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('mNombre').value.trim();
+    const target = round2(parseFloat($('mObjetivo').value));
+    if (!name || !(target > 0)) return;
+    metas.push({ id: newId(), name, target, saved: 0 });
+    saveJSON(KEY_METAS, metas);
+    closeSheets();
+    renderAll();
+  });
+
+  $('metasLista').addEventListener('click', (e) => {
+    const add = e.target.closest('[data-meta-add]');
+    const sub = e.target.closest('[data-meta-sub]');
+    const del = e.target.closest('[data-meta-del]');
+    if (add) abrirMonto(add.dataset.metaAdd, 'abonar');
+    if (sub) abrirMonto(sub.dataset.metaSub, 'retirar');
+    if (del) {
+      const g = metas.find((x) => x.id === del.dataset.metaDel);
+      if (g && confirm(`¿Eliminar la meta "${g.name}"?`)) {
+        metas = metas.filter((x) => x.id !== g.id);
+        saveJSON(KEY_METAS, metas); renderAll();
+      }
+    }
+  });
+
+  function abrirMonto(id, modo) {
+    const g = metas.find((x) => x.id === id);
+    if (!g) return;
+    metaActiva = id; modoMonto = modo;
+    $('montoTitulo').textContent = (modo === 'abonar' ? 'Abonar a ' : 'Retirar de ') + g.name;
+    $('montoAyuda').textContent = modo === 'abonar'
+      ? `Llevas ${money(g.saved)} de ${money(g.target)}.`
+      : `Puedes retirar hasta ${money(g.saved)}.`;
+    $('aMonto').value = '';
+    $('montoError').classList.add('hidden');
+    const btn = $('btnMonto');
+    btn.textContent = modo === 'abonar' ? 'Abonar' : 'Retirar';
+    btn.classList.toggle('bg-mint-500', modo === 'abonar');
+    btn.classList.toggle('bg-ink', modo === 'retirar');
+    openSheet('sheet-monto');
+    setTimeout(() => $('aMonto').focus(), 300);
+  }
+  $('formMonto').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const g = metas.find((x) => x.id === metaActiva);
+    const v = round2(parseFloat($('aMonto').value));
+    if (!g || !(v > 0)) return;
+    if (modoMonto === 'retirar' && v > g.saved) {
+      $('montoError').textContent = `Solo tienes ${money(g.saved)} en esta meta.`;
+      $('montoError').classList.remove('hidden');
+      return;
+    }
+    g.saved = round2(modoMonto === 'abonar' ? g.saved + v : g.saved - v);
+    saveJSON(KEY_METAS, metas);
+    closeSheets();
+    renderAll();
+  });
+
+  // ---------- Respaldo ----------
+  function descargar(nombre, contenido, mime) {
+    const url = URL.createObjectURL(new Blob([contenido], { type: mime }));
+    const a = document.createElement('a');
+    a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function buildCsv() {
+    const q = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+    const filas = [['Fecha', 'Tipo', 'Cuenta', 'Categoría', 'Descripción', 'Monto (S/)']];
+    [...movs].sort((a, b) => a.date.localeCompare(b.date))
+      .forEach((m) => filas.push([m.date, m.type === 'income' ? 'Ingreso' : 'Gasto', nombreCuenta(m.account), m.category, m.description, m.amount.toFixed(2)]));
+    return '﻿' + filas.map((f) => f.map(q).join(',')).join('\r\n');
+  }
+  function buildJson() {
+    return JSON.stringify({ exportado: new Date().toISOString(), presupuesto, cuentas, movimientos: movs, metas }, null, 2);
+  }
+  window.__finanzas = { buildCsv, buildJson }; // útil para pruebas desde la consola
+  $('btnCsv').addEventListener('click', () => descargar(`finanzas-${todayISO()}.csv`, buildCsv(), 'text/csv;charset=utf-8'));
+  $('btnJson').addEventListener('click', () => descargar(`finanzas-${todayISO()}.json`, buildJson(), 'application/json'));
+
+  // ---------- Easter egg: 3 toques al perrito ----------
+  let taps = [];
+  $('mascota').addEventListener('click', () => {
+    const now = Date.now();
+    taps = taps.filter((t) => now - t < 1200);
+    taps.push(now);
+    if (taps.length >= 3) { taps = []; abrirCumple(); }
+  });
+
+  function abrirCumple() {
+    $('bdayTitulo').textContent = MENSAJE_CUMPLEANOS.titulo;
+    $('bdayMensaje').textContent = MENSAJE_CUMPLEANOS.mensaje;
+    $('bdayFirma').textContent = MENSAJE_CUMPLEANOS.firma;
+    $('bday').classList.remove('hidden');
+    confeti();
+  }
+  function cerrarCumple() { $('bday').classList.add('hidden'); detenerConfeti(); }
+  $('bdayCerrar').addEventListener('click', cerrarCumple);
+  $('bday').addEventListener('click', (e) => { if (e.target === $('bday')) cerrarCumple(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { cerrarCumple(); closeSheets(); } });
+
+  let rafConfeti = null;
+  function detenerConfeti() {
+    cancelAnimationFrame(rafConfeti);
+    const c = $('confeti');
+    c.classList.add('hidden');
+    c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  }
+  function confeti() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    detenerConfeti();
+    const c = $('confeti');
+    const dpr = window.devicePixelRatio || 1;
+    c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+    c.classList.remove('hidden');
+    const ctx = c.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const cols = ['#34D399', '#10B981', '#FB7185', '#FBBF24', '#1E293B', '#FFFFFF'];
+    const ps = Array.from({ length: 70 }, () => ({
+      x: Math.random() * innerWidth, y: -20 - Math.random() * innerHeight * 0.6,
+      w: 6 + Math.random() * 6, h: 4 + Math.random() * 5,
+      vy: 0.8 + Math.random() * 1.4, vx: (Math.random() - 0.5) * 0.8,
+      r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.08,
+      col: cols[Math.floor(Math.random() * cols.length)]
+    }));
+    const t0 = performance.now();
+    (function frame(t) {
+      const el = t - t0;
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      ctx.globalAlpha = Math.max(0, Math.min(1, (6000 - el) / 1500));
+      ps.forEach((p) => {
+        p.x += p.vx + Math.sin((p.y + p.r * 40) / 40) * 0.4; p.y += p.vy; p.r += p.vr;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+        ctx.fillStyle = p.col; ctx.strokeStyle = 'rgba(30,41,59,.15)';
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      });
+      if (el < 6000) rafConfeti = requestAnimationFrame(frame); else detenerConfeti();
+    })(t0);
+  }
+
+  // ---------- Inicio ----------
+  function renderAll() {
+    $('totalMov').textContent = movs.length;
+    $('totalMetas').textContent = metas.length;
+    renderResumen();
+    renderHistorial();
+    renderMetas();
+  }
+  renderAll();
+  nav('resumen');
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+})();
+</script>
+</body>
+</html>
