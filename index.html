@@ -3,28 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#FAF9F6">
+<meta name="theme-color" content="#FAF8F5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Finanzas S/">
 <title>Finanzas Soles</title>
+<script>try { if (localStorage.getItem('finanzas_tema') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (e) {}</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
-        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+        fontFamily: { sans: ['Nunito', 'system-ui', 'sans-serif'] },
         colors: {
-          cream: '#FAF9F6',
-          ink: '#1E293B',
-          coral: '#FB7185',
-          mint: { 400: '#34D399', 500: '#10B981' }
+          cream: '#FAF8F5',
+          ink: '#1E2022',
+          coral: '#EF4444',
+          sky: '#BAE6FD',
+          mint: { 200: '#A7F3D0', 400: '#A7F3D0', 500: '#10B981', 600: '#059669' }
         }
       }
     }
@@ -32,42 +34,210 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
+  :root { --ink:#1E2022; --red:#EF4444; --mint:#10B981; --mint-l:#A7F3D0; --sky:#BAE6FD; --cream:#FAF8F5; --card:#fff; --line:#1E2022; --slice:#1E2022; --dot:rgba(30,32,34,.15); }
+  [data-theme="dark"] { --cream:#0F172A; --card:#1E293B; --ink:#F8FAFC; --line:#334155; --slice:#1E293B; --dot:rgba(248,250,252,.07); color-scheme: dark; }
   html, body { -webkit-tap-highlight-color: transparent; }
-  body { background: #FAF9F6; color: #1E293B; padding-top: env(safe-area-inset-top); font-feature-settings: 'tnum'; }
-  .card { background: #fff; border: 1px solid rgba(226,232,240,.8); border-radius: 1.5rem; box-shadow: 0 1px 2px rgba(30,41,59,.04), 0 8px 24px -12px rgba(30,41,59,.08); }
+  /* Fondo estilo bullet journal: puntitos muy sutiles */
+  body { background-color: var(--cream); background-image: radial-gradient(circle, var(--dot) 1.1px, transparent 1.5px); background-size: 20px 20px; color: var(--ink); font-weight: 600; padding-top: env(safe-area-inset-top); font-feature-settings: 'tnum'; }
+  .border-ink { border-color: var(--line) !important; }
+  .ring-ink { --tw-ring-color: var(--line) !important; --tw-ring-offset-color: var(--card) !important; }
+  .bg-cream { background-color: var(--cream) !important; }
+  b, strong, h1, h2, h3 { font-weight: 800; }
+  .muted { color: #5B6168; }
+
+  /* Tarjetas estilo ilustración: borde tinta + sombra sólida */
+  .card { background: #fff; border: 2px solid var(--line); border-radius: 1.25rem; box-shadow: 3px 3px 0 var(--line); }
+  .card-flat { background: #fff; border: 2px solid var(--line); border-radius: 1rem; }
+
+  /* Botones */
+  .btn { border: 2px solid var(--line); border-radius: 999px; font-weight: 800; box-shadow: 3px 3px 0 var(--line); transition: transform .12s, box-shadow .12s; }
+  .btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--line); }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-mint { background: var(--mint-l); color: var(--ink); }
+  .btn-ink { background: var(--ink); color: #fff; }
+  .btn-sky { background: var(--sky); color: var(--ink); }
+  .btn-white { background: #fff; color: var(--ink); }
+
+  .chip { border: 2px solid var(--line); background: var(--sky); border-radius: 999px; font-weight: 800; font-size: .8rem; padding: .3rem .8rem; }
+  .chip:active { background: var(--mint-l); }
+
+  .field { width: 100%; background: #fff; border: 2px solid var(--line); border-radius: 1rem; padding: .7rem 1rem; font-weight: 700; color: var(--ink); }
+  .field::placeholder { color: #9AA0A6; }
+  .lbl { font-size: .75rem; font-weight: 800; color: #5B6168; }
+
+  /* Controles segmentados */
+  .seg { border: 2px solid var(--line); border-radius: 999px; background: #fff; padding: 3px; gap: 2px; }
+  .seg button { border-radius: 999px; font-weight: 800; color: #5B6168; transition: background .15s; }
+  .seg button.on { background: var(--ink); color: #fff; }
+  .seg button.on-exp { background: var(--red); color: #fff; }
+  .seg button.on-inc { background: var(--mint-l); color: var(--ink); }
+
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-  .sheet { transform: translateY(105%); transition: transform .3s cubic-bezier(.22,1,.36,1); visibility: hidden; }
+  .sheet { transform: translateY(105%); transition: transform .3s cubic-bezier(.22,1,.36,1); visibility: hidden; border-top: 2px solid var(--line); }
   .sheet.open { transform: translateY(0); visibility: visible; }
   .overlay { opacity: 0; pointer-events: none; transition: opacity .25s ease; }
   .overlay.open { opacity: 1; pointer-events: auto; }
   .no-scrollbar { scrollbar-width: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
-  .bar { transition: width .9s cubic-bezier(.22,1,.36,1); }
   input, select { font-size: 16px; }
-  input:focus, select:focus { outline: 2px solid #34D399; outline-offset: 0; border-color: transparent; }
-  .view { animation: fadeUp .35s ease both; }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+  .field:focus { outline: 3px solid var(--sky); outline-offset: 0; }
+
+  /* Tarjeta de saldo: carta de colección con huellitas */
+  .coleccion {
+    background-color: var(--mint-l);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='black' fill-opacity='.075'%3E%3Cg transform='translate(6 8) rotate(-18 12 12)'%3E%3Cellipse cx='12' cy='16' rx='6' ry='5'/%3E%3Ccircle cx='4.5' cy='9' r='2.6'/%3E%3Ccircle cx='9.5' cy='4.5' r='2.6'/%3E%3Ccircle cx='14.5' cy='4.5' r='2.6'/%3E%3Ccircle cx='19.5' cy='9' r='2.6'/%3E%3C/g%3E%3Cg transform='translate(36 38) rotate(14 12 12)'%3E%3Cellipse cx='12' cy='16' rx='6' ry='5'/%3E%3Ccircle cx='4.5' cy='9' r='2.6'/%3E%3Ccircle cx='9.5' cy='4.5' r='2.6'/%3E%3Ccircle cx='14.5' cy='4.5' r='2.6'/%3E%3Ccircle cx='19.5' cy='9' r='2.6'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-size: 64px 64px;
+  }
+  .sello { background: #fff; border: 2px solid var(--line); border-radius: 999px; font-size: .7rem; font-weight: 800; padding: .15rem .6rem; }
+
+  /* Barra de progreso con huellita */
+  .track { border: 2px solid var(--line); background: #fff; border-radius: 999px; overflow: hidden; }
+  .bar { transition: width .9s cubic-bezier(.22,1,.36,1); }
+  .mark { transition: left .9s cubic-bezier(.22,1,.36,1); }
+
+  /* Navegación */
+  .navbtn { color: #5B6168; font-weight: 800; }
+  .navbtn .ico { width: 3rem; height: 1.9rem; border: 2px solid transparent; border-radius: 999px; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+  .navbtn.on { color: var(--ink); }
+  .navbtn.on .ico { background: var(--sky); border-color: var(--ink); }
+
+  /* ---- Modo noche: paleta propia (fondo #0F172A, tarjetas #1E293B, bordes #334155) ---- */
+  [data-theme="dark"] .card:not(.saldo-card), [data-theme="dark"] .field, [data-theme="dark"] .seg,
+  [data-theme="dark"] .btn-white { background-color: var(--card); }
+  [data-theme="dark"] .track { background-color: var(--cream); }
+  [data-theme="dark"] .bg-white { background-color: var(--card) !important; }
+  [data-theme="dark"] .card, [data-theme="dark"] .btn, [data-theme="dark"] .globo,
+  [data-theme="dark"] .sticker, [data-theme="dark"] .flota-msg { box-shadow: 3px 3px 0 #020617; }
+  [data-theme="dark"] .btn:active { box-shadow: 1px 1px 0 #020617; }
+  [data-theme="dark"] .muted, [data-theme="dark"] .lbl, [data-theme="dark"] .seg button { color: #CBD5E1; }
+  [data-theme="dark"] .navbtn { color: #94A3B8; }
+  [data-theme="dark"] .field::placeholder { color: #94A3B8; }
+  [data-theme="dark"] .seg button.on, [data-theme="dark"] .btn-ink { background: #F8FAFC; color: #0F172A; }
+  [data-theme="dark"] .seg button.on-exp { background: #EF4444; color: #fff; }
+  [data-theme="dark"] .seg button.on-inc, [data-theme="dark"] .btn-mint { background: #10B981; color: #022C22; }
+  [data-theme="dark"] .btn-sky, [data-theme="dark"] .chip { background: #1E3A5F; color: #BAE6FD; }
+  [data-theme="dark"] .navbtn.on { color: #F8FAFC; }
+  [data-theme="dark"] .navbtn.on .ico { background: #1E3A5F; color: #BAE6FD; border-color: #38BDF8; }
+  [data-theme="dark"] .text-mint-600 { color: #34D399; }
+  [data-theme="dark"] .text-coral { color: #F87171; }
+  [data-theme="dark"] .btn-red { color: #fff; }
+
+  /* Tarjeta de saldo */
+  .saldo-sub { color: rgba(30,32,34,.72); }
+  #saldo.neg { color: #B91C1C; }
+  .sello { color: #1E2022; }
+  [data-theme="dark"] .saldo-card { background-color: #134E4A; color: #F8FAFC; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='white' fill-opacity='.07'%3E%3Cg transform='translate(6 8) rotate(-18 12 12)'%3E%3Cellipse cx='12' cy='16' rx='6' ry='5'/%3E%3Ccircle cx='4.5' cy='9' r='2.6'/%3E%3Ccircle cx='9.5' cy='4.5' r='2.6'/%3E%3Ccircle cx='14.5' cy='4.5' r='2.6'/%3E%3Ccircle cx='19.5' cy='9' r='2.6'/%3E%3C/g%3E%3Cg transform='translate(36 38) rotate(14 12 12)'%3E%3Cellipse cx='12' cy='16' rx='6' ry='5'/%3E%3Ccircle cx='4.5' cy='9' r='2.6'/%3E%3Ccircle cx='9.5' cy='4.5' r='2.6'/%3E%3Ccircle cx='14.5' cy='4.5' r='2.6'/%3E%3Ccircle cx='19.5' cy='9' r='2.6'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  [data-theme="dark"] .saldo-card .saldo-sub { color: #CBD5E1; }
+  [data-theme="dark"] .saldo-card #saldo { color: #6EE7B7; }
+  [data-theme="dark"] .saldo-card #saldo.neg { color: #FCA5A5; }
+
+  /* Mini-tarjetas de cuenta: color de la cuenta en dia; pizarra con huellita de color en noche */
+  .cuenta-card { background: var(--c); color: var(--t); }
+  .cuenta-card .monto { color: var(--m); }
+  .cuenta-card .pata { fill: #fff; }
+  [data-theme="dark"] .cuenta-card { color: var(--ink); }
+  [data-theme="dark"] .cuenta-card .pata { fill: var(--c); }
+  [data-theme="dark"] .cuenta-card .monto { color: var(--ink); }
+  [data-theme="dark"] .cuenta-card .monto.neg { color: #FCA5A5; }
+  .coleccion { color: #1E2022; }
+
+  /* Sticker de meta lograda */
+  .sticker { position: absolute; top: -14px; right: 44px; z-index: 2; transform: rotate(5deg); display: flex; align-items: center; gap: .25rem; background: #FDE68A; color: #1E2022; border: 2px solid var(--line); border-radius: 999px; padding: .15rem .65rem .15rem .5rem; font-weight: 800; font-size: .8rem; box-shadow: 2px 2px 0 var(--line); animation: stick .5s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes stick { from { transform: rotate(-18deg) scale(1.5); opacity: 0; } to { transform: rotate(5deg) scale(1); opacity: 1; } }
+
+  /* Mensaje binario del regalo */
+  .binario { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace; font-size: .74rem; font-weight: 700; line-height: 1.75; letter-spacing: .02em; text-align: left; overflow-wrap: anywhere; white-space: pre-wrap; max-height: 11rem; overflow-y: auto; padding: .7rem .8rem; background: var(--cream); color: var(--ink); border: 2px dashed var(--line); border-radius: 1rem; }
+
+  /* Globo de diálogo del exponente */
+  #exponente { position: relative; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+  #exponente::after { content: ''; position: absolute; inset: -12px -10px; }
+  .globo { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace; letter-spacing: .12em; position: absolute; left: 0; top: calc(100% + 10px); z-index: 35; width: max-content; max-width: min(260px, calc(100vw - 7rem)); background: var(--card); color: var(--ink); border: 2px solid var(--line); border-radius: 1rem; box-shadow: 3px 3px 0 var(--line); padding: .6rem .85rem; font-size: .8rem; font-weight: 700; line-height: 1.35; }
+  .globo::before { content: ''; position: absolute; top: -8px; left: 22px; width: 12px; height: 12px; background: var(--card); border-left: 2px solid var(--line); border-top: 2px solid var(--line); transform: rotate(45deg); }
+
+  /* Huellitas y estrellas flotando */
+  .flota-capa { position: fixed; inset: 0; z-index: 75; pointer-events: none; overflow: hidden; }
+  .flota { position: absolute; bottom: -40px; animation: flota 2.6s ease-out both; }
+  @keyframes flota { 0% { transform: translate(0,0) rotate(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(var(--dx),-85vh) rotate(28deg); opacity: 0; } }
+  .flota-msg { position: absolute; left: 50%; top: 24%; transform: translateX(-50%); width: max-content; max-width: 82vw; text-align: center; background: var(--card); color: var(--ink); border: 2px solid var(--line); border-radius: 1.1rem; box-shadow: 3px 3px 0 var(--line); padding: .65rem 1rem; font-weight: 800; animation: msgFlota 3.4s ease both; }
+  @keyframes msgFlota { 0% { opacity: 0; transform: translateX(-50%) scale(.85); } 12% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+  .view { animation: fadeUp .3s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .pop { animation: pop .45s cubic-bezier(.22,1,.36,1) both; }
   @keyframes pop { from { opacity: 0; transform: scale(.9) translateY(12px); } to { opacity: 1; transform: none; } }
+  .wiggle:active { animation: wig .35s; }
+  @keyframes wig { 30% { transform: rotate(-8deg); } 60% { transform: rotate(6deg); } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body class="font-sans min-h-screen">
 
-<!-- Pochacco (símbolo reutilizable) -->
+<!-- Símbolos SVG reutilizables -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- Pochacco: orejas negras caídas, mechón, ojitos ovalados, nariz negra y cuello rojo -->
   <symbol id="pocha" viewBox="0 0 100 100">
-    <g stroke="#1E293B" stroke-width="2.5" stroke-linejoin="round">
-      <ellipse cx="17" cy="52" rx="10" ry="21" fill="#1E293B" transform="rotate(10 17 52)"/>
-      <ellipse cx="83" cy="52" rx="10" ry="21" fill="#1E293B" transform="rotate(-10 83 52)"/>
-      <ellipse cx="50" cy="54" rx="34" ry="30" fill="#FFFFFF"/>
+    <g stroke="#1E2022" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M31 71 Q50 84 69 71 L72 83 Q50 97 28 83 Z" fill="#EF4444"/>
+      <ellipse cx="19" cy="55" rx="11" ry="24" fill="#1E2022" transform="rotate(10 19 55)"/>
+      <ellipse cx="81" cy="55" rx="11" ry="24" fill="#1E2022" transform="rotate(-10 81 55)"/>
+      <ellipse cx="50" cy="48" rx="31" ry="27" fill="#FFFFFF"/>
+      <path d="M43 24 Q40 11 51 7 Q49 14 55 15 Q54 11 60 10 Q61 19 57 24 Z" fill="#1E2022"/>
     </g>
-    <circle cx="30" cy="60" r="4" fill="#FB7185" opacity="0.5"/>
-    <circle cx="70" cy="60" r="4" fill="#FB7185" opacity="0.5"/>
-    <circle cx="38" cy="50" r="3.2" fill="#1E293B"/>
-    <circle cx="62" cy="50" r="3.2" fill="#1E293B"/>
-    <ellipse cx="50" cy="59" rx="5" ry="3.5" fill="#1E293B"/>
-    <path d="M50 62.5v3M50 65.5q-4 4-8 1M50 65.5q4 4 8 1" fill="none" stroke="#1E293B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="50" cy="90" r="3.6" fill="#FCD34D" stroke="#1E2022" stroke-width="2"/>
+    <circle cx="30" cy="57" r="4.2" fill="#EF4444" opacity=".35"/>
+    <circle cx="70" cy="57" r="4.2" fill="#EF4444" opacity=".35"/>
+    <ellipse cx="39" cy="47" rx="3.2" ry="4.5" fill="#1E2022"/>
+    <ellipse cx="61" cy="47" rx="3.2" ry="4.5" fill="#1E2022"/>
+    <circle cx="40.2" cy="45.4" r="1.2" fill="#fff"/>
+    <circle cx="62.2" cy="45.4" r="1.2" fill="#fff"/>
+    <ellipse cx="50" cy="55" rx="5.2" ry="3.7" fill="#1E2022"/>
+    <ellipse cx="48.6" cy="53.8" rx="1.5" ry=".9" fill="#fff" opacity=".8"/>
+    <path d="M50 58.5v3M50 61.5q-4 3.5-8 .5M50 61.5q4 3.5 8 .5" fill="none" stroke="#1E2022" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <!-- Pochacco preocupado: ojos grandes, cejitas y gotita de sudor -->
+  <symbol id="pocha-alerta" viewBox="0 0 100 100">
+    <g stroke="#1E2022" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M31 71 Q50 84 69 71 L72 83 Q50 97 28 83 Z" fill="#EF4444"/>
+      <ellipse cx="19" cy="55" rx="11" ry="24" fill="#1E2022" transform="rotate(10 19 55)"/>
+      <ellipse cx="81" cy="55" rx="11" ry="24" fill="#1E2022" transform="rotate(-10 81 55)"/>
+      <ellipse cx="50" cy="48" rx="31" ry="27" fill="#FFFFFF"/>
+      <path d="M43 24 Q40 11 51 7 Q49 14 55 15 Q54 11 60 10 Q61 19 57 24 Z" fill="#1E2022"/>
+    </g>
+    <circle cx="50" cy="90" r="3.6" fill="#FCD34D" stroke="#1E2022" stroke-width="2"/>
+    <circle cx="30" cy="57" r="4.2" fill="#EF4444" opacity=".5"/>
+    <circle cx="70" cy="57" r="4.2" fill="#EF4444" opacity=".5"/>
+    <path d="M33 37q5-3 10-1M67 37q-5-3-10-1" fill="none" stroke="#1E2022" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="38.5" cy="47" rx="3.8" ry="5.3" fill="#1E2022"/>
+    <ellipse cx="61.5" cy="47" rx="3.8" ry="5.3" fill="#1E2022"/>
+    <circle cx="40" cy="44.8" r="1.5" fill="#fff"/>
+    <circle cx="63" cy="44.8" r="1.5" fill="#fff"/>
+    <ellipse cx="50" cy="55.5" rx="5.2" ry="3.7" fill="#1E2022"/>
+    <ellipse cx="48.6" cy="54.3" rx="1.5" ry=".9" fill="#fff" opacity=".8"/>
+    <path d="M44 63q2.2-2.6 4.5 0t4.5 0t4.5 0" fill="none" stroke="#1E2022" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M77 22c3.6 5 5.6 8 5.6 11a5.6 5.6 0 0 1-11.2 0c0-3 2-6 5.6-11z" fill="#BAE6FD" stroke="#1E2022" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M75.6 33.5a2.4 2.4 0 0 0 1.8 2.2" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
+  </symbol>
+  <!-- Huellita (el color de relleno lo da el svg que la usa) -->
+  <symbol id="paw" viewBox="0 0 24 24">
+    <g stroke="#1E2022" stroke-width="1.4" stroke-linejoin="round">
+      <ellipse cx="12" cy="16.5" rx="6.2" ry="5"/>
+      <circle cx="4.5" cy="10" r="2.6"/><circle cx="9.3" cy="5.4" r="2.6"/>
+      <circle cx="14.7" cy="5.4" r="2.6"/><circle cx="19.5" cy="10" r="2.6"/>
+    </g>
+  </symbol>
+  <!-- Huesito -->
+  <symbol id="bone" viewBox="0 0 48 24">
+    <g stroke="#1E2022" stroke-width="2" stroke-linejoin="round">
+      <rect x="10" y="8" width="28" height="8" rx="2"/>
+      <circle cx="9" cy="8" r="5"/><circle cx="9" cy="16" r="5"/>
+      <circle cx="39" cy="8" r="5"/><circle cx="39" cy="16" r="5"/>
+    </g>
+    <rect x="9" y="8.6" width="30" height="6.8" fill="currentColor" stroke="none"/>
+  </symbol>
+  <!-- Estrella -->
+  <symbol id="star" viewBox="0 0 24 24">
+    <path d="M12 2.2l3 6.4 7 .9-5.1 4.9 1.3 7L12 17.9 5.8 21.4l1.3-7L2 9.5l7-.9z" stroke="#1E2022" stroke-width="1.6" stroke-linejoin="round"/>
   </symbol>
 </svg>
 
@@ -76,44 +246,51 @@
   <!-- Cabecera -->
   <header class="flex items-center gap-3 mb-5">
     <button id="mascota" type="button" aria-label="Pochacco"
-      class="w-14 h-14 shrink-0 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-center active:scale-90 transition select-none"
-      style="touch-action:manipulation">
-      <svg class="w-10 h-10" viewBox="0 0 100 100" aria-hidden="true"><use href="#pocha"/></svg>
+      class="wiggle w-16 h-16 shrink-0 card !rounded-[1.4rem] bg-sky flex items-center justify-center select-none"
+      style="touch-action:manipulation;background:#BAE6FD">
+      <svg class="w-12 h-12" viewBox="0 0 100 100" aria-hidden="true"><use id="mascotaUse" href="#pocha"/></svg>
     </button>
-    <div class="min-w-0">
-      <h1 class="text-[22px] font-extrabold leading-tight tracking-tight">Hola, Arian<sup>2</sup>a</h1>
-      <p id="mesActual" class="text-sm text-slate-500 capitalize"></p>
+    <div class="min-w-0 relative">
+      <h1 class="text-[24px] font-extrabold leading-tight tracking-tight">Hola, Arian<sup id="exponente" role="button" tabindex="0" aria-label="Exponente">2</sup>a</h1>
+      <p id="mesActual" class="text-sm muted capitalize"></p>
+      <div id="globo" class="globo pop hidden" role="status"></div>
     </div>
+    <button id="btnTema" type="button" class="btn btn-white ml-auto shrink-0 w-10 h-10 !rounded-full flex items-center justify-center" aria-label="Cambiar a modo noche">
+      <svg id="temaLuna" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+      <svg id="temaSol" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
   </header>
 
   <!-- ============ RESUMEN ============ -->
   <section id="view-resumen" class="view">
-    <div class="rounded-[1.75rem] bg-ink text-white p-6 shadow-[0_18px_40px_-18px_rgba(30,41,59,.55)] relative overflow-hidden">
-      <div class="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-mint-400/20"></div>
-      <div class="absolute right-10 -bottom-10 w-24 h-24 rounded-full bg-mint-400/10"></div>
-      <p class="text-sm text-white/60 font-medium">Saldo Total Disponible</p>
-      <p id="saldo" class="text-[40px] leading-none font-extrabold mt-2 tracking-tight">S/ 0.00</p>
-      <p class="text-xs text-white/45 mt-3">Suma de todas tus cuentas</p>
+    <div class="coleccion saldo-card card p-5 relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <p class="text-sm font-extrabold">Saldo actual</p>
+        <span class="sello flex items-center gap-1"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" style="fill:#EF4444"><use href="#paw"/></svg>Pochacco</span>
+      </div>
+      <p id="saldo" class="text-[42px] leading-none font-extrabold mt-3 tracking-tight">S/ 0.00</p>
+      <p class="saldo-sub text-xs font-bold mt-3">Suma de todas tus cuentas</p>
+      <svg class="absolute -right-3 -bottom-4 w-24 h-24 rotate-[8deg]" viewBox="0 0 100 100" aria-hidden="true"><use href="#pocha"/></svg>
     </div>
 
     <!-- Carrusel de cuentas -->
     <div class="-mx-4 mt-3">
-      <div id="cuentas" class="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scroll-smooth" style="-webkit-overflow-scrolling:touch"></div>
+      <div id="cuentas" class="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-3 pr-6 snap-x snap-mandatory scroll-smooth" style="-webkit-overflow-scrolling:touch"></div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 mt-3">
+    <div class="grid grid-cols-2 gap-3 mt-1">
       <div class="card p-4">
-        <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <span class="w-6 h-6 rounded-full bg-emerald-50 text-mint-500 flex items-center justify-center">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        <div class="flex items-center gap-2 text-xs font-extrabold muted">
+          <span class="w-7 h-7 rounded-full border-2 border-ink flex items-center justify-center" style="background:#A7F3D0;color:#1E2022">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
           </span>Ingresos del Mes
         </div>
-        <p id="ingresosMes" class="text-lg font-extrabold text-mint-500 mt-2">S/ 0.00</p>
+        <p id="ingresosMes" class="text-lg font-extrabold text-mint-600 mt-2">S/ 0.00</p>
       </div>
       <div class="card p-4">
-        <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <span class="w-6 h-6 rounded-full bg-rose-50 text-coral flex items-center justify-center">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+        <div class="flex items-center gap-2 text-xs font-extrabold muted">
+          <span class="w-7 h-7 rounded-full border-2 border-ink flex items-center justify-center bg-coral text-white">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
           </span>Gastos del Mes
         </div>
         <p id="gastosMes" class="text-lg font-extrabold text-coral mt-2">S/ 0.00</p>
@@ -123,239 +300,240 @@
     <!-- Presupuesto -->
     <div class="card p-4 mt-3">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold">Presupuesto del mes</h2>
-        <button id="btnPresupuesto" class="text-xs font-semibold text-mint-500 px-2 py-1 -mr-2">Editar</button>
+        <h2 class="text-sm font-extrabold">Presupuesto del mes</h2>
+        <button id="btnPresupuesto" class="chip">Editar</button>
       </div>
-      <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden mt-3">
-        <div id="presBar" class="bar h-full rounded-full bg-mint-400" style="width:0"></div>
+      <div class="track h-5 mt-3">
+        <div id="presBar" class="bar h-full" style="width:0;background:#10B981"></div>
       </div>
-      <p id="presTexto" class="text-xs text-slate-500 mt-2"></p>
+      <p id="presTexto" class="text-xs muted mt-2"></p>
     </div>
 
     <div class="card p-5 mt-3">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-bold">Gastos por categoría</h2>
-        <div id="selPeriodo" class="flex bg-slate-100 rounded-full p-0.5 text-[11px] font-bold">
-          <button data-p="dia" class="rounded-full px-2.5 py-1">Hoy</button>
-          <button data-p="semana" class="rounded-full px-2.5 py-1">Semana</button>
-          <button data-p="mes" class="rounded-full px-2.5 py-1">Mes</button>
-          <button data-p="anio" class="rounded-full px-2.5 py-1">Año</button>
-        </div>
+      <h2 class="text-sm font-extrabold mb-3">Gastos por categoría</h2>
+      <div id="selPeriodo" class="seg grid grid-cols-4 text-xs mb-4">
+        <button data-p="dia" class="py-1.5">Hoy</button>
+        <button data-p="semana" class="py-1.5">Semana</button>
+        <button data-p="mes" class="py-1.5">Mes</button>
+        <button data-p="anio" class="py-1.5">Año</button>
       </div>
-      <p class="text-xs text-slate-500">Total gastado <span id="periodoNombre">este mes</span></p>
+      <p class="text-xs muted">Total gastado <span id="periodoNombre">este mes</span></p>
       <p id="periodoTotal" class="text-2xl font-extrabold text-coral mb-3">S/ 0.00</p>
       <div id="donaWrap" class="relative h-52"><canvas id="dona"></canvas></div>
-      <p id="donaVacio" class="hidden text-center text-sm text-slate-400 py-10">Aún no hay gastos en este periodo.</p>
-      <ul id="donaLeyenda" class="mt-4 space-y-2 text-sm"></ul>
+      <div id="donaVacio" class="hidden text-center py-6">
+        <svg class="w-20 h-10 mx-auto" viewBox="0 0 48 24" style="color:#BAE6FD" aria-hidden="true"><use href="#bone"/></svg>
+        <p class="font-extrabold mt-2">Sin gastos en este periodo</p>
+        <p class="text-sm muted">Cuando registres uno, aparecerá aquí.</p>
+      </div>
+      <ul id="donaLeyenda" class="mt-4 space-y-2 text-sm font-bold"></ul>
     </div>
   </section>
 
   <!-- ============ HISTORIAL ============ -->
   <section id="view-historial" class="view hidden">
-    <h2 class="text-lg font-extrabold mb-3">Historial</h2>
+    <h2 class="text-xl font-extrabold mb-3">Historial</h2>
     <div class="flex gap-2 mb-3">
-      <input id="filtroMes" type="month" class="flex-1 min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-2.5">
-      <button id="btnTodosMeses" class="rounded-2xl bg-white border border-slate-200 px-4 text-sm font-semibold">Todos</button>
+      <input id="filtroMes" type="month" class="field flex-1 min-w-0">
+      <button id="btnTodosMeses" class="btn btn-white px-5 text-sm">Todos</button>
     </div>
-    <div id="filtroTipo" class="grid grid-cols-3 gap-1 bg-slate-200/60 rounded-2xl p-1 mb-4 text-sm font-semibold">
-      <button data-tipo="all" class="rounded-xl py-2">Todos</button>
-      <button data-tipo="income" class="rounded-xl py-2">Ingresos</button>
-      <button data-tipo="expense" class="rounded-xl py-2">Gastos</button>
+    <div id="filtroTipo" class="seg grid grid-cols-3 mb-4 text-sm">
+      <button data-tipo="all" class="py-2">Todos</button>
+      <button data-tipo="income" class="py-2">Ingresos</button>
+      <button data-tipo="expense" class="py-2">Gastos</button>
     </div>
-    <ul id="lista" class="space-y-2"></ul>
-    <p id="listaVacia" class="hidden text-center text-slate-400 py-14 text-sm">No hay movimientos para este filtro.</p>
+    <ul id="lista" class="space-y-3"></ul>
+    <div id="listaVacia" class="hidden text-center py-12">
+      <svg class="w-16 h-16 mx-auto" viewBox="0 0 24 24" style="fill:#BAE6FD" aria-hidden="true"><use href="#paw"/></svg>
+      <p class="font-extrabold mt-2">Nada por aquí</p>
+      <p class="text-sm muted">No hay movimientos para este filtro.</p>
+    </div>
   </section>
 
   <!-- ============ METAS ============ -->
   <section id="view-metas" class="view hidden">
     <div class="flex items-center justify-between mb-1">
-      <h2 class="text-lg font-extrabold">Metas</h2>
-      <button id="btnNuevaMeta" class="rounded-full bg-ink text-white text-sm font-semibold px-4 py-2 active:scale-95 transition">+ Nueva meta</button>
+      <h2 class="text-xl font-extrabold">Metas</h2>
+      <button id="btnNuevaMeta" class="btn btn-red text-sm px-4 py-2">+ Nueva meta</button>
     </div>
-    <p class="text-xs text-slate-500 mb-4">Tus alcancías de ahorro. El dinero de las metas es aparte y no cambia tu saldo.</p>
+    <p class="text-xs muted mb-4">Tus alcancías de ahorro. El dinero de las metas es aparte y no cambia tu saldo.</p>
     <ul id="metasLista" class="space-y-3"></ul>
     <div id="metasVacio" class="hidden card p-8 text-center">
-      <svg class="w-16 h-16 mx-auto" viewBox="0 0 100 100"><use href="#pocha"/></svg>
-      <p class="font-bold mt-3">Aún no tienes metas</p>
-      <p class="text-sm text-slate-500 mt-1">Crea una alcancía para tu próximo viaje, compra o ahorro.</p>
+      <svg class="w-20 h-10 mx-auto" viewBox="0 0 48 24" style="color:#A7F3D0" aria-hidden="true"><use href="#bone"/></svg>
+      <p class="font-extrabold mt-3">Aún no tienes metas</p>
+      <p class="text-sm muted mt-1">Crea una alcancía para tu próximo viaje, compra o ahorro.</p>
     </div>
   </section>
 
   <!-- ============ RESPALDO ============ -->
   <section id="view-respaldo" class="view hidden">
-    <h2 class="text-lg font-extrabold mb-3">Respaldo</h2>
+    <h2 class="text-xl font-extrabold mb-3">Respaldo</h2>
     <div class="card p-5 space-y-3">
-      <p class="text-sm text-slate-500">Tus datos viven solo en este teléfono. Exporta una copia de vez en cuando para no perderlos.</p>
+      <p class="text-sm muted">Tus datos viven solo en este teléfono. Exporta una copia de vez en cuando para no perderlos.</p>
       <p class="text-sm"><span id="totalMov" class="font-extrabold">0</span> movimientos · <span id="totalMetas" class="font-extrabold">0</span> metas</p>
-      <button id="btnCsv" class="w-full rounded-2xl bg-mint-500 text-white font-bold py-3.5 active:scale-95 transition">Exportar CSV (movimientos)</button>
-      <button id="btnJson" class="w-full rounded-2xl bg-ink text-white font-bold py-3.5 active:scale-95 transition">Exportar JSON (todo)</button>
+      <button id="btnCsv" class="btn btn-mint w-full py-3.5">Exportar CSV (movimientos)</button>
+      <button id="btnJson" class="btn btn-ink w-full py-3.5">Exportar JSON (todo)</button>
     </div>
   </section>
 </main>
 
 <!-- FAB -->
 <button id="fab" aria-label="Registrar movimiento"
-  class="fixed right-5 z-30 w-14 h-14 rounded-full bg-mint-500 text-white shadow-[0_12px_28px_-8px_rgba(16,185,129,.7)] active:scale-90 transition flex items-center justify-center"
+  class="btn btn-mint fixed right-5 z-30 w-14 h-14 !rounded-full flex items-center justify-center"
   style="bottom: calc(5.75rem + env(safe-area-inset-bottom))">
-  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
 </button>
 
 <!-- Navegación inferior -->
-<nav class="fixed bottom-0 inset-x-0 z-20 bg-cream/90 backdrop-blur border-t border-slate-200/70 safe-bottom">
-  <div class="max-w-md mx-auto grid grid-cols-4 text-[11px] font-semibold px-2">
-    <button data-nav="resumen" class="py-2.5 flex flex-col items-center gap-1">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Resumen</button>
-    <button data-nav="historial" class="py-2.5 flex flex-col items-center gap-1">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Historial</button>
-    <button data-nav="metas" class="py-2.5 flex flex-col items-center gap-1">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Metas</button>
-    <button data-nav="respaldo" class="py-2.5 flex flex-col items-center gap-1">
-      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>Respaldo</button>
+<nav class="fixed bottom-0 inset-x-0 z-20 bg-cream border-t-2 border-ink safe-bottom">
+  <div class="max-w-md mx-auto grid grid-cols-4 text-[11px] px-2">
+    <button data-nav="resumen" class="navbtn py-2 flex flex-col items-center gap-0.5">
+      <span class="ico"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Resumen</button>
+    <button data-nav="historial" class="navbtn py-2 flex flex-col items-center gap-0.5">
+      <span class="ico"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>Historial</button>
+    <button data-nav="metas" class="navbtn py-2 flex flex-col items-center gap-0.5">
+      <span class="ico"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>Metas</button>
+    <button data-nav="respaldo" class="navbtn py-2 flex flex-col items-center gap-0.5">
+      <span class="ico"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg></span>Respaldo</button>
   </div>
 </nav>
 
 <!-- Overlay compartido -->
-<div id="overlay" class="overlay fixed inset-0 z-40 bg-ink/40"></div>
+<div id="overlay" class="overlay fixed inset-0 z-40" style="background:rgba(30,32,34,.45)"></div>
 
 <!-- Sheet: movimiento -->
-<div id="sheet-mov" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+<div id="sheet-mov" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] safe-bottom" aria-hidden="true">
   <form id="form" class="max-w-md mx-auto p-5 space-y-3">
     <div class="flex items-center justify-between">
       <h2 id="sheetTitulo" class="text-lg font-extrabold">Nuevo movimiento</h2>
-      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+      <button type="button" data-close class="text-3xl leading-none px-2" aria-label="Cerrar">×</button>
     </div>
-    <div id="selTipo" class="grid grid-cols-2 gap-1 bg-slate-100 rounded-2xl p-1 text-sm font-bold">
-      <button type="button" data-tipo="expense" class="rounded-xl py-2.5">Gasto</button>
-      <button type="button" data-tipo="income" class="rounded-xl py-2.5">Ingreso</button>
+    <div id="selTipo" class="seg grid grid-cols-2 text-sm">
+      <button type="button" data-tipo="expense" class="py-2.5">Gasto</button>
+      <button type="button" data-tipo="income" class="py-2.5">Ingreso</button>
     </div>
     <label class="block">
-      <span class="text-xs text-slate-500 font-medium">Monto (S/)</span>
-      <input id="fMonto" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00"
-        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
+      <span class="lbl">Monto (S/)</span>
+      <input id="fMonto" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00" class="field text-2xl font-extrabold">
     </label>
     <label class="block">
-      <span class="text-xs text-slate-500 font-medium">Descripción</span>
-      <input id="fDesc" type="text" maxlength="80" required placeholder="Ej. Almuerzo"
-        class="w-full rounded-2xl border border-slate-200 px-4 py-3">
+      <span class="lbl">Descripción</span>
+      <input id="fDesc" type="text" maxlength="80" required placeholder="Ej. Almuerzo" class="field">
     </label>
     <label class="block">
-      <span class="text-xs text-slate-500 font-medium">Cuenta</span>
-      <select id="fCuenta" class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3"></select>
+      <span class="lbl">Cuenta</span>
+      <select id="fCuenta" class="field"></select>
     </label>
     <div class="grid grid-cols-2 gap-3">
       <label class="block">
-        <span class="text-xs text-slate-500 font-medium">Categoría</span>
-        <select id="fCat" class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3"></select>
+        <span class="lbl">Categoría</span>
+        <select id="fCat" class="field"></select>
       </label>
       <label class="block">
-        <span class="text-xs text-slate-500 font-medium">Fecha</span>
-        <input id="fFecha" type="date" required class="w-full rounded-2xl border border-slate-200 px-3 py-3">
+        <span class="lbl">Fecha</span>
+        <input id="fFecha" type="date" required class="field">
       </label>
     </div>
-    <button type="submit" id="btnGuardar" class="w-full rounded-2xl text-white font-bold py-3.5 active:scale-95 transition">Guardar</button>
+    <button type="submit" id="btnGuardar" class="btn w-full py-3.5">Guardar</button>
   </form>
 </div>
 
 <!-- Sheet: cuenta -->
-<div id="sheet-cuenta" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+<div id="sheet-cuenta" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] safe-bottom" aria-hidden="true">
   <form id="formCuenta" class="max-w-md mx-auto p-5 space-y-3">
     <div class="flex items-center justify-between">
       <h2 id="cuentaTitulo" class="text-lg font-extrabold">Nueva cuenta</h2>
-      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+      <button type="button" data-close class="text-3xl leading-none px-2" aria-label="Cerrar">×</button>
     </div>
     <div class="flex gap-2 flex-wrap" id="chipsCuenta">
-      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Yape</button>
-      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Efectivo</button>
-      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Tarjeta BCP</button>
-      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Interbank</button>
+      <button type="button" class="chip">Yape</button>
+      <button type="button" class="chip">Efectivo</button>
+      <button type="button" class="chip">Tarjeta BCP</button>
+      <button type="button" class="chip">Interbank</button>
     </div>
     <label class="block">
-      <span class="text-xs text-slate-500 font-medium">Nombre</span>
-      <input id="cNombre" type="text" maxlength="24" required placeholder="Ej. Yape" class="w-full rounded-2xl border border-slate-200 px-4 py-3">
+      <span class="lbl">Nombre</span>
+      <input id="cNombre" type="text" maxlength="24" required placeholder="Ej. Yape" class="field">
     </label>
     <div>
-      <span class="text-xs text-slate-500 font-medium">Color</span>
+      <span class="lbl">Color</span>
       <div id="cColores" class="flex gap-3 mt-2"></div>
     </div>
     <label class="block">
-      <span class="text-xs text-slate-500 font-medium">Saldo inicial (S/)</span>
-      <input id="cInicial" type="number" inputmode="decimal" step="0.01" placeholder="0.00"
-        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
+      <span class="lbl">Saldo inicial (S/)</span>
+      <input id="cInicial" type="number" inputmode="decimal" step="0.01" placeholder="0.00" class="field text-2xl font-extrabold">
     </label>
-    <p id="cuentaError" class="hidden text-sm text-coral font-medium"></p>
-    <button type="submit" class="w-full rounded-2xl bg-mint-500 text-white font-bold py-3.5 active:scale-95 transition">Guardar cuenta</button>
-    <button type="button" id="btnBorrarCuenta" class="hidden w-full rounded-2xl bg-rose-50 text-coral font-bold py-3 active:scale-95 transition">Eliminar cuenta</button>
+    <p id="cuentaError" class="hidden text-sm text-coral font-extrabold"></p>
+    <button type="submit" class="btn btn-mint w-full py-3.5">Guardar cuenta</button>
+    <button type="button" id="btnBorrarCuenta" class="hidden btn btn-white w-full py-3 text-coral">Eliminar cuenta</button>
   </form>
 </div>
 
 <!-- Sheet: presupuesto -->
-<div id="sheet-pres" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+<div id="sheet-pres" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] safe-bottom" aria-hidden="true">
   <form id="formPres" class="max-w-md mx-auto p-5 space-y-3">
     <div class="flex items-center justify-between">
       <h2 class="text-lg font-extrabold">Presupuesto mensual</h2>
-      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+      <button type="button" data-close class="text-3xl leading-none px-2" aria-label="Cerrar">×</button>
     </div>
-    <p class="text-sm text-slate-500">¿Cuánto quieres gastar como máximo cada mes? Déjalo vacío para quitarlo.</p>
-    <input id="fPres" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Ej. 1500"
-      class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
-    <button type="submit" class="w-full rounded-2xl bg-ink text-white font-bold py-3.5 active:scale-95 transition">Guardar presupuesto</button>
+    <p class="text-sm muted">¿Cuánto quieres gastar como máximo cada mes? Déjalo vacío para quitarlo.</p>
+    <input id="fPres" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Ej. 1500" class="field text-2xl font-extrabold">
+    <button type="submit" class="btn btn-ink w-full py-3.5">Guardar presupuesto</button>
   </form>
 </div>
 
 <!-- Sheet: nueva meta -->
-<div id="sheet-meta" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+<div id="sheet-meta" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] safe-bottom" aria-hidden="true">
   <form id="formMeta" class="max-w-md mx-auto p-5 space-y-3">
     <div class="flex items-center justify-between">
       <h2 class="text-lg font-extrabold">Nueva meta</h2>
-      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+      <button type="button" data-close class="text-3xl leading-none px-2" aria-label="Cerrar">×</button>
     </div>
     <div class="flex gap-2 flex-wrap" id="chipsMeta">
-      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Viaje</button>
-      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Compras</button>
-      <button type="button" class="rounded-full bg-emerald-50 text-mint-500 text-sm font-semibold px-3 py-1.5">Ahorros</button>
+      <button type="button" class="chip">Viaje</button>
+      <button type="button" class="chip">Compras</button>
+      <button type="button" class="chip">Ahorros</button>
     </div>
     <label class="block">
-      <span class="text-xs text-slate-500 font-medium">Nombre</span>
-      <input id="mNombre" type="text" maxlength="30" required placeholder="Ej. Viaje a Cusco" class="w-full rounded-2xl border border-slate-200 px-4 py-3">
+      <span class="lbl">Nombre</span>
+      <input id="mNombre" type="text" maxlength="30" required placeholder="Ej. Viaje a Cusco" class="field">
     </label>
     <label class="block">
-      <span class="text-xs text-slate-500 font-medium">Monto objetivo (S/)</span>
-      <input id="mObjetivo" type="number" inputmode="decimal" step="0.01" min="1" required placeholder="0.00"
-        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
+      <span class="lbl">Monto objetivo (S/)</span>
+      <input id="mObjetivo" type="number" inputmode="decimal" step="0.01" min="1" required placeholder="0.00" class="field text-2xl font-extrabold">
     </label>
-    <button type="submit" class="w-full rounded-2xl bg-mint-500 text-white font-bold py-3.5 active:scale-95 transition">Crear meta</button>
+    <button type="submit" class="btn btn-mint w-full py-3.5">Crear meta</button>
   </form>
 </div>
 
 <!-- Sheet: abonar / retirar -->
-<div id="sheet-monto" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] shadow-2xl safe-bottom" aria-hidden="true">
+<div id="sheet-monto" class="sheet fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2rem] safe-bottom" aria-hidden="true">
   <form id="formMonto" class="max-w-md mx-auto p-5 space-y-3">
     <div class="flex items-center justify-between">
       <h2 id="montoTitulo" class="text-lg font-extrabold">Abonar</h2>
-      <button type="button" data-close class="text-slate-400 text-3xl leading-none px-2" aria-label="Cerrar">×</button>
+      <button type="button" data-close class="text-3xl leading-none px-2" aria-label="Cerrar">×</button>
     </div>
-    <p id="montoAyuda" class="text-sm text-slate-500"></p>
-    <input id="aMonto" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00"
-      class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-2xl font-extrabold">
-    <p id="montoError" class="hidden text-sm text-coral font-medium"></p>
-    <button type="submit" id="btnMonto" class="w-full rounded-2xl text-white font-bold py-3.5 active:scale-95 transition">Confirmar</button>
+    <p id="montoAyuda" class="text-sm muted"></p>
+    <input id="aMonto" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00" class="field text-2xl font-extrabold">
+    <p id="montoError" class="hidden text-sm text-coral font-extrabold"></p>
+    <button type="submit" id="btnMonto" class="btn w-full py-3.5">Confirmar</button>
   </form>
 </div>
 
 <!-- Easter egg: cumpleaños -->
 <canvas id="confeti" class="fixed inset-0 z-[70] pointer-events-none hidden"></canvas>
-<div id="bday" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6 bg-ink/50" role="dialog" aria-modal="true">
+<div id="bday" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6" style="background:rgba(30,32,34,.55)" role="dialog" aria-modal="true">
   <div class="pop card w-full max-w-sm overflow-hidden text-center">
-    <div class="bg-mint-400/25 pt-8 pb-5">
-      <div class="w-24 h-24 mx-auto rounded-3xl bg-white shadow-sm flex items-center justify-center">
-        <svg class="w-20 h-20" viewBox="0 0 100 100"><use href="#pocha"/></svg>
+    <div class="coleccion border-b-2 border-ink pt-8 pb-5" style="background-color:#BAE6FD">
+      <div class="w-28 h-28 mx-auto rounded-[2rem] card flex items-center justify-center" style="background:#fff!important">
+        <svg class="w-24 h-24" viewBox="0 0 100 100"><use href="#pocha"/></svg>
       </div>
     </div>
     <div class="px-6 pt-5 pb-6">
       <h2 id="bdayTitulo" class="text-2xl font-extrabold tracking-tight"></h2>
-      <p id="bdayMensaje" class="text-slate-600 mt-3 leading-relaxed whitespace-pre-line"></p>
-      <p id="bdayFirma" class="font-bold text-mint-500 mt-4"></p>
-      <button id="bdayCerrar" class="mt-6 w-full rounded-2xl bg-ink text-white font-bold py-3.5 active:scale-95 transition">Gracias</button>
+      <p id="bdayMensaje" class="binario mt-3"></p>
+      <button id="bdayCopiar" type="button" class="chip mt-2" style="font-size:.72rem;padding:.2rem .7rem">Copiar código</button>
+      <p id="bdayFirma" class="font-extrabold text-coral mt-4"></p>
+      <button id="bdayCerrar" class="btn btn-red mt-6 w-full py-3.5">Gracias</button>
     </div>
   </div>
 </div>
@@ -366,12 +544,22 @@
 //  Se muestra al tocar 3 veces seguidas el perrito de la cabecera.
 //  Para cambiar el texto, edita SOLO los textos entre comillas.
 //  En "mensaje" puedes usar \n para saltos de línea.
+//  (Ahora el mensaje es código binario: se muestra en letra
+//  monoespaciada y tiene un botón "Copiar código".)
 // ============================================================
 const MENSAJE_CUMPLEANOS = {
   titulo: "¡Feliz cumpleaños, Arian²a!",
-  mensaje: "Que este nuevo año venga lleno de metas cumplidas, buenos momentos y muchas sonrisas.\nGracias por ser tan especial.",
+  mensaje: "01000110 01100101 01101100 01101001 01111010 00100000 01100011 01110101 01101101 01110000 01101100 01100101 01100001 11000011 10110001 01101111 01110011 00100000 01110000 01100101 01110001 01110101 01100101 11000011 10110001 01100001 00100000 01000010 01110010 01101111 00101100 00100000 01100100 01100101 00100000 01110000 01100001 01110010 01110100 01100101 00100000 01100100 01100101 00100000 01110100 01110101 01110011 00100000 01110000 01100101 01110001 01110101 01100101 11000011 10110001 01101111 01110011 00100000 01100010 01110010 01101111 01110011 00101100 00100000 01110010 01100101 01100011 01101001 01100010 01100101 00100000 01101110 01110101 01100101 01110011 01110100 01110010 01101111 00100000 01100010 01101111 01100100 01110010 01101001 01101111 00100000 01110100 01100101 00100000 01100100 01100101 01110011 01100101 01100001 01101101 01101111 01110011 00100000 01110101 01101110 00100000 01101101 01110101 01111001 00100000 01100110 01100101 01101100 01101001 01111010 00100000 01100011 01110101 01101101 01110000 01101100 01100101 01100001 11000011 10110001 01101111 01110011 00101100 00100000 01110001 01110101 01100101 00100000 01110011 01100101 01100001 01101110 00100000 01101101 01110101 01100011 01101000 01101111 01110011 00100000 01101101 01100001 01110011",
   firma: "Con cariño, tu amigo"
 };
+
+// ============================================================
+//  CHISTE DEL EXPONENTE (Easter Egg)
+//  Aparece en un globo de diálogo al tocar el "2" de Arian²a
+//  (clic o mantenerlo presionado 600 ms).
+//  Edita solo el texto entre comillas.
+// ============================================================
+const CHISTE_EXPONENTE = "1000011";
 
 (() => {
   'use strict';
@@ -381,12 +569,14 @@ const MENSAJE_CUMPLEANOS = {
   const KEY_METAS = 'finanzas_metas';
   const KEY_PRES = 'finanzas_presupuesto';
   const KEY_CUENTAS = 'finanzas_cuentas';
-  const COLORES_CUENTA = ['#34D399', '#FB7185', '#60A5FA', '#FBBF24', '#A78BFA', '#1E293B'];
+  const COLORES_CUENTA = ['#A7F3D0', '#BAE6FD', '#FCA5A5', '#FDE68A', '#DDD6FE', '#FBCFE8'];
   const CATS = {
     expense: ['Alimentación', 'Transporte', 'Vivienda', 'Servicios', 'Salud', 'Educación', 'Entretenimiento', 'Compras', 'Otros'],
     income: ['Sueldo', 'Negocio', 'Regalo', 'Inversión', 'Otros']
   };
-  const COLORS = ['#FB7185', '#34D399', '#1E293B', '#FBBF24', '#60A5FA', '#A78BFA', '#F472B6', '#2DD4BF', '#94A3B8'];
+  const COLORS = ['#EF4444', '#10B981', '#7DD3FC', '#FCD34D', '#C4B5FD', '#F9A8D4', '#1E2022', '#A7F3D0', '#FDBA74'];
+  const COLORS_DARK = ['#F87171', '#34D399', '#7DD3FC', '#FCD34D', '#C4B5FD', '#F9A8D4', '#CBD5E1', '#6EE7B7', '#FDBA74'];
+  const paleta = () => (document.documentElement.dataset.theme === 'dark' ? COLORS_DARK : COLORS);
   const fmt = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
   const money = (n) => fmt.format(n).replace(/\s/g, ' ').replace('PEN', 'S/');
 
@@ -399,6 +589,16 @@ const MENSAJE_CUMPLEANOS = {
   const fechaLarga = (iso) => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${MESES[m - 1].slice(0, 3)} ${y}`; };
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const round2 = (n) => Math.round(n * 100) / 100;
+  // Colores de cuentas antiguas (p. ej. tinta oscura) siguen siendo legibles
+  const esOscuro = (hex) => {
+    const h = String(hex).replace('#', '');
+    if (h.length !== 6) return false;
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.substr(i, 2), 16));
+    return (r * 299 + g * 587 + b * 114) / 1000 < 110;
+  };
+
+  // Sello de meta cumplida
+  const STICKER = `<span class="sticker"><svg class="w-4 h-4" viewBox="0 0 24 24" style="fill:#EF4444"><use href="#star"/></svg>¡Logrado!<svg class="w-4 h-4" viewBox="0 0 24 24" style="fill:#fff"><use href="#star"/></svg><svg class="w-3 h-3 -ml-1 -mt-2" viewBox="0 0 24 24" style="fill:#A7F3D0"><use href="#star"/></svg></span>`;
 
   function loadJSON(key, def) {
     try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; }
@@ -462,12 +662,7 @@ const MENSAJE_CUMPLEANOS = {
   const VIEWS = ['resumen', 'historial', 'metas', 'respaldo'];
   function nav(view) {
     VIEWS.forEach((v) => $('view-' + v).classList.toggle('hidden', v !== view));
-    document.querySelectorAll('[data-nav]').forEach((b) => {
-      const on = b.dataset.nav === view;
-      b.classList.toggle('text-ink', on);
-      b.classList.toggle('text-slate-400', !on);
-      b.querySelector('svg').style.color = on ? '#10B981' : '';
-    });
+    document.querySelectorAll('[data-nav]').forEach((b) => b.classList.toggle('on', b.dataset.nav === view));
     $('fab').classList.toggle('hidden', view === 'respaldo' || view === 'metas');
     window.scrollTo(0, 0);
     if (view === 'resumen') renderResumen();
@@ -483,19 +678,22 @@ const MENSAJE_CUMPLEANOS = {
   function renderCuentas() {
     $('cuentas').innerHTML = cuentas.map((c) => {
       const s = saldoCuenta(c);
-      return `<button data-cuenta="${esc(c.id)}" class="snap-start shrink-0 w-36 card !rounded-2xl p-3.5 text-left active:scale-95 transition">
-        <span class="flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${esc(c.color)}"></span><span class="truncate">${esc(c.name)}</span>
+      const oscuro = esOscuro(c.color);
+      const txt = oscuro ? '#fff' : '#1E2022';
+      const monto = s < 0 ? (oscuro ? '#FCA5A5' : '#B91C1C') : txt;
+      return `<button data-cuenta="${esc(c.id)}" class="cuenta-card snap-start shrink-0 w-36 card !rounded-2xl p-3.5 text-left active:translate-x-0.5 active:translate-y-0.5 transition relative overflow-hidden" style="--c:${esc(c.color)};--t:${txt};--m:${monto}">
+        <span class="flex items-center gap-1.5 text-xs font-extrabold">
+          <svg class="pata w-4 h-4 shrink-0" viewBox="0 0 24 24"><use href="#paw"/></svg><span class="truncate">${esc(c.name)}</span>
         </span>
-        <span class="block text-base font-extrabold mt-1.5 ${s < 0 ? 'text-coral' : ''}">${money(s)}</span>
+        <span class="monto block text-lg font-extrabold mt-2${s < 0 ? ' neg' : ''}">${money(s)}</span>
       </button>`;
-    }).join('') + `<button id="btnNuevaCuenta" class="snap-start shrink-0 w-28 rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 text-xs font-bold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
-        <span class="text-xl leading-none">+</span>Cuenta</button>`;
+    }).join('') + `<button id="btnNuevaCuenta" class="snap-start shrink-0 w-28 rounded-2xl border-2 border-dashed border-ink bg-white text-xs font-extrabold flex flex-col items-center justify-center gap-1 active:scale-95 transition">
+        <span class="text-2xl leading-none">+</span>Cuenta</button>`;
   }
 
   function pintarColores() {
     $('cColores').innerHTML = COLORES_CUENTA.map((col) =>
-      `<button type="button" data-col="${col}" aria-label="Color" class="w-8 h-8 rounded-full ${col === cuentaColor ? 'ring-2 ring-offset-2 ring-ink' : ''}" style="background:${col}"></button>`
+      `<button type="button" data-col="${col}" aria-label="Color" class="w-9 h-9 rounded-full border-2 border-ink ${col === cuentaColor ? 'ring-2 ring-offset-2 ring-ink' : ''}" style="background:${col}"></button>`
     ).join('');
   }
   $('cColores').addEventListener('click', (e) => {
@@ -583,6 +781,7 @@ const MENSAJE_CUMPLEANOS = {
     const saldo = cuentas.reduce((a, c) => a + saldoCuenta(c), 0);
 
     $('saldo').textContent = money(saldo);
+    $('saldo').classList.toggle('neg', saldo < 0);
     renderCuentas();
     $('ingresosMes').textContent = money(ing);
     $('gastosMes').textContent = money(gas);
@@ -594,7 +793,7 @@ const MENSAJE_CUMPLEANOS = {
     if (presupuesto > 0) {
       const pct = gas / presupuesto * 100;
       const restante = presupuesto - gas;
-      bar.style.background = pct >= 85 ? '#FB7185' : '#34D399';
+      bar.style.background = pct >= 85 ? '#EF4444' : '#10B981';
       requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = Math.min(100, pct) + '%'; }));
       $('presTexto').textContent = restante >= 0
         ? `Llevas ${money(gas)} de ${money(presupuesto)} · te quedan ${money(restante)}`
@@ -604,18 +803,17 @@ const MENSAJE_CUMPLEANOS = {
       $('presTexto').textContent = 'Aún no defines un presupuesto. Toca "Editar" para crear uno.';
     }
 
+    // Pochacco reactivo: preocupado si los gastos pasan del 85% del presupuesto
+    const alerta = presupuesto > 0 && gas / presupuesto >= 0.85;
+    $('mascotaUse').setAttribute('href', alerta ? '#pocha-alerta' : '#pocha');
+    $('mascota').setAttribute('aria-label', alerta ? 'Pochacco preocupado: ya gastaste casi todo tu presupuesto' : 'Pochacco');
+
     // Gastos por categoría
     const [desde, hasta] = rangoPeriodo(periodo);
     const gastosPeriodo = movs.filter((x) => x.type === 'expense' && x.date >= desde && x.date <= hasta);
     $('periodoNombre').textContent = { dia: 'hoy', semana: 'esta semana', mes: 'este mes', anio: 'este año' }[periodo];
     $('periodoTotal').textContent = money(sum(gastosPeriodo));
-    document.querySelectorAll('#selPeriodo button').forEach((b) => {
-      const on = b.dataset.p === periodo;
-      b.classList.toggle('bg-white', on);
-      b.classList.toggle('shadow-sm', on);
-      b.classList.toggle('text-ink', on);
-      b.classList.toggle('text-slate-500', !on);
-    });
+    document.querySelectorAll('#selPeriodo button').forEach((b) => b.classList.toggle('on', b.dataset.p === periodo));
     const porCat = {};
     gastosPeriodo.forEach((x) => { porCat[x.category] = (porCat[x.category] || 0) + x.amount; });
     const entries = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
@@ -624,7 +822,7 @@ const MENSAJE_CUMPLEANOS = {
     $('donaVacio').classList.toggle('hidden', hayDatos);
 
     $('donaLeyenda').innerHTML = entries.map(([c, v], i) =>
-      `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${COLORS[i % COLORS.length]}"></span>${esc(c)}</span><span class="font-bold">${money(v)}</span></li>`
+      `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="inline-block w-3.5 h-3.5 rounded-full border-2 border-ink" style="background:${paleta()[i % COLORS.length]}"></span>${esc(c)}</span><span class="font-extrabold">${money(v)}</span></li>`
     ).join('');
 
     if (chart) { chart.destroy(); chart = null; }
@@ -633,11 +831,11 @@ const MENSAJE_CUMPLEANOS = {
         type: 'doughnut',
         data: {
           labels: entries.map((e) => e[0]),
-          datasets: [{ data: entries.map((e) => e[1]), backgroundColor: entries.map((_, i) => COLORS[i % COLORS.length]), borderWidth: 3, borderColor: '#fff', borderRadius: 6, hoverOffset: 4 }]
+          datasets: [{ data: entries.map((e) => e[1]), backgroundColor: entries.map((_, i) => paleta()[i % COLORS.length]), borderWidth: 2.5, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--slice').trim() || '#1E2022', hoverOffset: 4 }]
         },
         options: {
           maintainAspectRatio: false,
-          cutout: '68%',
+          cutout: '62%',
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${money(ctx.parsed)}` } }
@@ -665,13 +863,7 @@ const MENSAJE_CUMPLEANOS = {
   // ---------- Historial ----------
   function renderHistorial() {
     $('filtroMes').value = filtroMes;
-    document.querySelectorAll('#filtroTipo button').forEach((b) => {
-      const on = b.dataset.tipo === filtroTipo;
-      b.classList.toggle('bg-white', on);
-      b.classList.toggle('shadow-sm', on);
-      b.classList.toggle('text-ink', on);
-      b.classList.toggle('text-slate-500', !on);
-    });
+    document.querySelectorAll('#filtroTipo button').forEach((b) => b.classList.toggle('on', b.dataset.tipo === filtroTipo));
     const lista = movs
       .filter((m) => (!filtroMes || m.date.startsWith(filtroMes)) && (filtroTipo === 'all' || m.type === filtroTipo))
       .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
@@ -680,17 +872,17 @@ const MENSAJE_CUMPLEANOS = {
     $('lista').innerHTML = lista.map((m) => {
       const inc = m.type === 'income';
       return `<li class="card !rounded-2xl p-3 flex items-center gap-3">
-        <span class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${inc ? 'bg-emerald-50 text-mint-500' : 'bg-rose-50 text-coral'}">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${inc ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M19 12l-7 7-7-7"/>'}</svg>
+        <span class="w-10 h-10 shrink-0 rounded-full border-2 border-ink flex items-center justify-center ${inc ? 'text-ink' : 'text-white'}" style="background:${inc ? '#A7F3D0' : '#EF4444'}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${inc ? '<path d="M12 19V5M5 12l7-7 7 7"/>' : '<path d="M12 5v14M19 12l-7 7-7-7"/>'}</svg>
         </span>
         <div class="flex-1 min-w-0">
-          <p class="font-semibold truncate">${esc(m.description)}</p>
-          <p class="text-xs text-slate-500 truncate">${esc(m.category)} · ${esc(nombreCuenta(m.account))} · ${fechaLarga(m.date)}</p>
+          <p class="font-extrabold truncate">${esc(m.description)}</p>
+          <p class="text-xs muted truncate">${esc(m.category)} · ${esc(nombreCuenta(m.account))} · ${fechaLarga(m.date)}</p>
         </div>
         <div class="text-right">
-          <p class="font-extrabold ${inc ? 'text-mint-500' : 'text-coral'}">${inc ? '+' : '−'}${money(m.amount)}</p>
-          <div class="flex gap-3 justify-end text-xs mt-1 font-medium">
-            <button data-edit="${esc(m.id)}" class="text-slate-500 underline">Editar</button>
+          <p class="font-extrabold ${inc ? 'text-mint-600' : 'text-coral'}">${inc ? '+' : '−'}${money(m.amount)}</p>
+          <div class="flex gap-3 justify-end text-xs mt-1 font-extrabold">
+            <button data-edit="${esc(m.id)}" class="underline">Editar</button>
             <button data-del="${esc(m.id)}" class="text-coral underline">Eliminar</button>
           </div>
         </div>
@@ -719,15 +911,12 @@ const MENSAJE_CUMPLEANOS = {
     formTipo = t;
     document.querySelectorAll('#selTipo button').forEach((b) => {
       const on = b.dataset.tipo === t;
-      b.classList.toggle('bg-white', on);
-      b.classList.toggle('shadow-sm', on);
-      b.classList.toggle('text-coral', on && t === 'expense');
-      b.classList.toggle('text-mint-500', on && t === 'income');
-      b.classList.toggle('text-slate-500', !on);
+      b.classList.toggle('on-exp', on && t === 'expense');
+      b.classList.toggle('on-inc', on && t === 'income');
     });
     const btn = $('btnGuardar');
-    btn.classList.toggle('bg-coral', t === 'expense');
-    btn.classList.toggle('bg-mint-500', t === 'income');
+    btn.classList.toggle('btn-red', t === 'expense');
+    btn.classList.toggle('btn-mint', t === 'income');
     const actual = $('fCat').value;
     $('fCat').innerHTML = CATS[t].map((c) => `<option>${esc(c)}</option>`).join('');
     if (CATS[t].includes(actual)) $('fCat').value = actual;
@@ -769,6 +958,7 @@ const MENSAJE_CUMPLEANOS = {
     saveJSON(KEY, movs);
     closeSheets();
     renderAll();
+    huellitas(description);
   });
 
   // ---------- Metas (alcancías) ----------
@@ -778,24 +968,30 @@ const MENSAJE_CUMPLEANOS = {
       const pct = g.target > 0 ? Math.min(100, g.saved / g.target * 100) : 0;
       const done = g.saved >= g.target;
       const prev = lastPct[g.id] || 0;
-      return `<li class="card p-4">
+      const icono = done
+        ? '<svg class="w-4 h-4" viewBox="0 0 24 24" style="fill:#FCD34D"><use href="#star"/></svg>'
+        : '<svg class="w-4 h-4" viewBox="0 0 24 24" style="fill:#EF4444"><use href="#paw"/></svg>';
+      return `<li class="card p-4 relative">${done ? STICKER : ''}
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
             <p class="font-extrabold truncate">${esc(g.name)}</p>
-            <p class="text-xs text-slate-500 mt-0.5">${done ? '¡Meta lograda!' : 'Faltan ' + money(g.target - g.saved)}</p>
+            <p class="text-xs muted mt-0.5">${done ? '¡Meta lograda!' : 'Faltan ' + money(g.target - g.saved)}</p>
           </div>
-          <button data-meta-del="${esc(g.id)}" class="text-slate-300 text-2xl leading-none px-1" aria-label="Eliminar meta">×</button>
+          <button data-meta-del="${esc(g.id)}" class="text-2xl leading-none px-1 muted" aria-label="Eliminar meta">×</button>
         </div>
         <div class="flex items-end justify-between mt-3">
-          <p class="text-xl font-extrabold ${done ? 'text-mint-500' : ''}">${money(g.saved)}</p>
-          <p class="text-xs text-slate-500">de ${money(g.target)} · ${Math.round(pct)}%</p>
+          <p class="text-xl font-extrabold ${done ? 'text-mint-600' : ''}">${money(g.saved)}</p>
+          <p class="text-xs muted">de ${money(g.target)} · ${Math.round(pct)}%</p>
         </div>
-        <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden mt-2">
-          <div class="bar h-full rounded-full bg-mint-400" data-w="${pct}" data-id="${esc(g.id)}" style="width:${prev}%"></div>
+        <div class="relative h-8 mx-3.5 mt-2">
+          <div class="track absolute inset-x-[-14px] top-[7px] h-[18px]">
+            <div class="bar h-full" data-w="${pct}" data-id="${esc(g.id)}" style="width:${prev}%;background:#10B981"></div>
+          </div>
+          <span class="mark absolute top-0 w-8 h-8 -ml-4 rounded-full bg-white border-2 border-ink flex items-center justify-center" data-w="${pct}" style="left:${prev}%">${icono}</span>
         </div>
         <div class="grid grid-cols-2 gap-2 mt-4">
-          <button data-meta-add="${esc(g.id)}" class="rounded-xl bg-mint-500 text-white text-sm font-bold py-2.5 active:scale-95 transition">Abonar</button>
-          <button data-meta-sub="${esc(g.id)}" class="rounded-xl bg-slate-100 text-ink text-sm font-bold py-2.5 active:scale-95 transition">Retirar</button>
+          <button data-meta-add="${esc(g.id)}" class="btn btn-mint text-sm py-2.5">Abonar</button>
+          <button data-meta-sub="${esc(g.id)}" class="btn btn-white text-sm py-2.5">Retirar</button>
         </div>
       </li>`;
     }).join('');
@@ -804,6 +1000,7 @@ const MENSAJE_CUMPLEANOS = {
         b.style.width = b.dataset.w + '%';
         lastPct[b.dataset.id] = parseFloat(b.dataset.w);
       });
+      document.querySelectorAll('#metasLista .mark').forEach((m) => { m.style.left = m.dataset.w + '%'; });
     }));
   }
 
@@ -854,8 +1051,8 @@ const MENSAJE_CUMPLEANOS = {
     $('montoError').classList.add('hidden');
     const btn = $('btnMonto');
     btn.textContent = modo === 'abonar' ? 'Abonar' : 'Retirar';
-    btn.classList.toggle('bg-mint-500', modo === 'abonar');
-    btn.classList.toggle('bg-ink', modo === 'retirar');
+    btn.classList.toggle('btn-mint', modo === 'abonar');
+    btn.classList.toggle('btn-ink', modo === 'retirar');
     openSheet('sheet-monto');
     setTimeout(() => $('aMonto').focus(), 300);
   }
@@ -913,6 +1110,21 @@ const MENSAJE_CUMPLEANOS = {
     $('bday').classList.remove('hidden');
     confeti();
   }
+  $('bdayCopiar').addEventListener('click', async () => {
+    const txt = MENSAJE_CUMPLEANOS.mensaje;
+    let ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; }
+    catch {
+      const ta = document.createElement('textarea');
+      ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch { /* sin portapapeles */ }
+      ta.remove();
+    }
+    const b = $('bdayCopiar');
+    b.textContent = ok ? '¡Copiado!' : 'Selecciona y copia el texto';
+    setTimeout(() => { b.textContent = 'Copiar código'; }, 2000);
+  });
   function cerrarCumple() { $('bday').classList.add('hidden'); detenerConfeti(); }
   $('bdayCerrar').addEventListener('click', cerrarCumple);
   $('bday').addEventListener('click', (e) => { if (e.target === $('bday')) cerrarCumple(); });
@@ -934,12 +1146,14 @@ const MENSAJE_CUMPLEANOS = {
     c.classList.remove('hidden');
     const ctx = c.getContext('2d');
     ctx.scale(dpr, dpr);
-    const cols = ['#34D399', '#10B981', '#FB7185', '#FBBF24', '#1E293B', '#FFFFFF'];
-    const ps = Array.from({ length: 70 }, () => ({
+    // crema, rojo deportivo, menta y celeste
+    const cols = ['#FAF8F5', '#EF4444', '#10B981', '#A7F3D0', '#BAE6FD'];
+    const ps = Array.from({ length: 80 }, () => ({
       x: Math.random() * innerWidth, y: -20 - Math.random() * innerHeight * 0.6,
-      w: 6 + Math.random() * 6, h: 4 + Math.random() * 5,
+      w: 7 + Math.random() * 6, h: 5 + Math.random() * 5,
       vy: 0.8 + Math.random() * 1.4, vx: (Math.random() - 0.5) * 0.8,
       r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.08,
+      round: Math.random() < 0.3,
       col: cols[Math.floor(Math.random() * cols.length)]
     }));
     const t0 = performance.now();
@@ -950,13 +1164,111 @@ const MENSAJE_CUMPLEANOS = {
       ps.forEach((p) => {
         p.x += p.vx + Math.sin((p.y + p.r * 40) / 40) * 0.4; p.y += p.vy; p.r += p.vr;
         ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
-        ctx.fillStyle = p.col; ctx.strokeStyle = 'rgba(30,41,59,.15)';
-        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.fillStyle = p.col; ctx.strokeStyle = '#1E2022'; ctx.lineWidth = 1.5;
+        if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.h * 0.7, 0, 6.2832); ctx.fill(); ctx.stroke(); }
+        else { ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h); }
         ctx.restore();
       });
       if (el < 6000) rafConfeti = requestAnimationFrame(frame); else detenerConfeti();
     })(t0);
   }
+
+  // ---------- Easter egg: huellitas flotando ----------
+  const EGGS = [
+    { re: /helado/i, msg: '¡Un heladito! Pochacco quiere probar un poquito.' },
+    { re: /pochacco/i, msg: '¡Guau! Pochacco te manda un abrazo.' },
+    { re: /cumple/i, msg: '¡Fiesta de huellitas! Que se note la celebración.' }
+  ];
+  function huellitas(texto) {
+    const hit = EGGS.find((e) => e.re.test(texto));
+    if (!hit) return;
+    const cols = ['#EF4444', '#A7F3D0', '#BAE6FD', '#FCD34D', '#FAF8F5'];
+    let html = '';
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      for (let i = 0; i < 22; i++) {
+        const w = 18 + Math.random() * 18;
+        html += `<svg class="flota" viewBox="0 0 24 24" style="left:${Math.random() * 92}%;width:${w}px;height:${w}px;fill:${cols[i % cols.length]};animation-delay:${(Math.random() * 0.9).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.2).toFixed(2)}s;--dx:${Math.round((Math.random() - 0.5) * 120)}px"><use href="#${i % 3 === 0 ? 'star' : 'paw'}"/></svg>`;
+      }
+    }
+    html += `<div class="flota-msg">${esc(hit.msg)}</div>`;
+    const capa = document.createElement('div');
+    capa.className = 'flota-capa';
+    capa.setAttribute('aria-live', 'polite');
+    capa.innerHTML = html;
+    document.body.appendChild(capa);
+    setTimeout(() => capa.remove(), 3600);
+  }
+
+  // ---------- Easter egg: globo del exponente ----------
+  const globo = $('globo');
+  let globoTimer = null;
+  function mostrarGlobo() {
+    globo.textContent = CHISTE_EXPONENTE;
+    globo.classList.remove('hidden', 'pop');
+    void globo.offsetWidth;
+    globo.classList.add('pop');
+    clearTimeout(globoTimer);
+    globoTimer = setTimeout(() => globo.classList.add('hidden'), 4500);
+  }
+  // Clic o mantener presionado 600 ms
+  let pulsoTimer = null, pulsoLargo = false;
+  const cancelarPulso = () => clearTimeout(pulsoTimer);
+  $('exponente').addEventListener('pointerdown', () => {
+    pulsoLargo = false;
+    cancelarPulso();
+    pulsoTimer = setTimeout(() => { pulsoLargo = true; mostrarGlobo(); }, 600);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => $('exponente').addEventListener(ev, cancelarPulso));
+  $('exponente').addEventListener('contextmenu', (e) => e.preventDefault());
+  $('exponente').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (pulsoLargo) { pulsoLargo = false; return; } // el long-press ya lo mostró
+    if (globo.classList.contains('hidden')) mostrarGlobo(); else globo.classList.add('hidden');
+  });
+  $('exponente').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mostrarGlobo(); }
+  });
+  document.addEventListener('click', () => globo.classList.add('hidden'));
+
+  // ---------- Modo día / noche ----------
+  function aplicarTema(t) {
+    if (t === 'dark') document.documentElement.dataset.theme = 'dark'; else delete document.documentElement.dataset.theme;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = t === 'dark' ? '#161B22' : '#FAF8F5';
+    $('temaLuna').classList.toggle('hidden', t === 'dark');
+    $('temaSol').classList.toggle('hidden', t !== 'dark');
+    $('btnTema').setAttribute('aria-label', t === 'dark' ? 'Cambiar a modo día' : 'Cambiar a modo noche');
+  }
+  $('btnTema').addEventListener('click', () => {
+    const nuevo = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('finanzas_tema', nuevo); } catch { /* sin almacenamiento */ }
+    aplicarTema(nuevo);
+    renderResumen(); // la dona toma el color del borde del tema
+  });
+  aplicarTema(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+
+  // ---------- Audio de bienvenida (./intro.mpeg, opcional) ----------
+  // Se intenta al cargar; si el navegador bloquea el autoplay, suena en el primer toque/clic.
+  // Una sola vez por sesión. Si el archivo no existe, no pasa nada.
+  (function introAudio() {
+    const FLAG = 'finanzas_intro_sonado';
+    try { if (sessionStorage.getItem(FLAG)) return; } catch { /* sin sessionStorage */ }
+    let audio;
+    try { audio = new Audio('./intro.mpeg'); audio.preload = 'auto'; audio.volume = 0.8; } catch { return; }
+    const marcar = () => { try { sessionStorage.setItem(FLAG, '1'); } catch { /* ok */ } };
+    const EVENTOS = ['click', 'touchend', 'keydown'];
+    const quitar = () => EVENTOS.forEach((ev) => document.removeEventListener(ev, alPrimerToque, true));
+    function intentar() {
+      try {
+        const p = audio.play();
+        return p && p.then ? p.then(() => { marcar(); return true; }).catch(() => false) : Promise.resolve(false);
+      } catch { return Promise.resolve(false); }
+    }
+    function alPrimerToque() { quitar(); intentar(); }
+    intentar().then((sono) => {
+      if (!sono) EVENTOS.forEach((ev) => document.addEventListener(ev, alPrimerToque, { capture: true }));
+    });
+  })();
 
   // ---------- Inicio ----------
   function renderAll() {

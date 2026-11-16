@@ -34,6 +34,11 @@ El service worker solo funciona en `http://localhost` o HTTPS (no con `file://`)
 - El JSON de respaldo incluye `presupuesto`, `cuentas`, `movimientos` y `metas`; el CSV incluye la columna Cuenta.
 - Las metas son alcancías **separadas**: abonar/retirar NO modifica el saldo del Resumen. Retirar no puede exceder lo ahorrado.
 - Easter egg: 3 toques seguidos (<1.2 s) al perrito de la cabecera abren un modal con confeti. El texto vive en la constante `MENSAJE_CUMPLEANOS` al inicio del `<script>` de `index.html`; mantenerla ahí, arriba y comentada, porque un amigo la edita.
+- Tema: modo día (crema `#FAF8F5`) / noche (`#161B22`) con `data-theme="dark"` en `<html>`; variables CSS `--cream`, `--card`, `--ink`. Se guarda en `localStorage['finanzas_tema']` (`'dark'` o `'light'`). Fondo con puntitos tipo bullet journal.
+- Pochacco de la cabecera cambia a `#pocha-alerta` (gotita de sudor) cuando los gastos del mes ≥ 85 % del presupuesto. Metas al 100 % muestran el sello `STICKER`.
+- Easter eggs extra: descripción con "helado", "pochacco" o "cumple" al guardar un movimiento (`EGGS`/`huellitas()`); toque al `2` de Arian²a abre un globo con `CHISTE_EXPONENTE` (constante editable arriba del `<script>`, junto a `MENSAJE_CUMPLEANOS`).
+- `MENSAJE_CUMPLEANOS.mensaje` es código binario (se muestra en monoespaciada con botón "Copiar código"). El globo del `2` (`CHISTE_EXPONENTE = "1000011"`) sale con clic o long-press de 600 ms.
+- Audio opcional `./intro.mpeg` (el usuario lo coloca en la carpeta): `introAudio()` lo intenta al cargar y, si hay bloqueo de autoplay, en el primer toque/clic; una vez por sesión (`sessionStorage['finanzas_intro_sonado']`). `sw.js` lo cachea de forma opcional y sirve respuestas 206 (Range) desde caché.
 - El nombre se escribe `Arian<sup>2</sup>a` en HTML (y `Arian²a` en texto plano).
 - Al modificar cualquier archivo cacheado (`index.html`, `manifest.json`, iconos), incrementar `CACHE_VERSION` en `sw.js` para que los clientes reciban la nueva versión.
 - Escapar con `esc()` todo texto del usuario antes de insertarlo con `innerHTML`.
