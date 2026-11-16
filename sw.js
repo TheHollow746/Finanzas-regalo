@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v99';
 const CACHE_NAME = 'finanzas-soles-' + CACHE_VERSION;
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
 // Opcional: si el archivo aún no existe, la instalación NO falla.

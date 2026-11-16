@@ -246,9 +246,11 @@
   <!-- Cabecera -->
   <header class="flex items-center gap-3 mb-5">
     <button id="mascota" type="button" aria-label="Pochacco"
-      class="wiggle w-16 h-16 shrink-0 card !rounded-[1.4rem] bg-sky flex items-center justify-center select-none"
+      class="wiggle relative w-16 h-16 shrink-0 card !rounded-[1.4rem] bg-sky flex items-center justify-center select-none"
       style="touch-action:manipulation;background:#BAE6FD">
-      <svg class="w-12 h-12" viewBox="0 0 100 100" aria-hidden="true"><use id="mascotaUse" href="#pocha"/></svg>
+      <img src="./icon-192.png" alt="" width="56" height="56" class="w-14 h-14 rounded-full object-cover" draggable="false">
+      <!-- gotita de sudor: aparece cuando los gastos pasan del 85 % del presupuesto -->
+      <svg id="gotita" class="hidden absolute -top-1.5 -right-1.5 w-6 h-6" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c4 5.5 6 9 6 12a6 6 0 0 1-12 0c0-3 2-6.5 6-12z" fill="#BAE6FD" stroke="#1E2022" stroke-width="1.8" stroke-linejoin="round"/></svg>
     </button>
     <div class="min-w-0 relative">
       <h1 class="text-[24px] font-extrabold leading-tight tracking-tight">Hola, Arian<sup id="exponente" role="button" tabindex="0" aria-label="Exponente">2</sup>a</h1>
@@ -525,7 +527,7 @@
   <div class="pop card w-full max-w-sm overflow-hidden text-center">
     <div class="coleccion border-b-2 border-ink pt-8 pb-5" style="background-color:#BAE6FD">
       <div class="w-28 h-28 mx-auto rounded-[2rem] card flex items-center justify-center" style="background:#fff!important">
-        <svg class="w-24 h-24" viewBox="0 0 100 100"><use href="#pocha"/></svg>
+        <img src="./icon-192.png" alt="Pochacco" width="96" height="96" class="w-24 h-24 rounded-full object-cover" draggable="false">
       </div>
     </div>
     <div class="px-6 pt-5 pb-6">
@@ -805,7 +807,7 @@ const CHISTE_EXPONENTE = "1000011";
 
     // Pochacco reactivo: preocupado si los gastos pasan del 85% del presupuesto
     const alerta = presupuesto > 0 && gas / presupuesto >= 0.85;
-    $('mascotaUse').setAttribute('href', alerta ? '#pocha-alerta' : '#pocha');
+    $('gotita').classList.toggle('hidden', !alerta);
     $('mascota').setAttribute('aria-label', alerta ? 'Pochacco preocupado: ya gastaste casi todo tu presupuesto' : 'Pochacco');
 
     // Gastos por categoría
